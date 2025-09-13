@@ -9,7 +9,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     permissions:
-      contents: write 
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -22,8 +22,5 @@ jobs:
         run: |
           pip install mkdocs mkdocs-material
 
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./docs/site
+      - name: Deploy with mkdocs
+        run: mkdocs gh-deploy -f docs/mkdocs.yml --force
