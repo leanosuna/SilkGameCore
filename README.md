@@ -13,30 +13,29 @@ A framework for creating 3D games, built using Silk.NET and OpenGL
 	- [x] Assimp loader abstraction
 	- [x] Model, Parts, Meshes hierarchy  
 	- [ ] Embedded textures
-- [x] texture manager 
+- [x] Texture manager 
 	- [x] Handles texture loading
 	- [x] Avoids duplicates
 	- [x] Easily retrieve textures by name
-- [x] vertex/fragment shaders
-	- [x] easy selection as active
-	- [x] easy uniform management
-	- [x] texture as uniform management
-- [x] render target manager
-	- [x] framebuffers creation management
-	- [x] select active target(s)
-	- [x] copy from target to target 
-- [x] imgui
-	- [x] font management, custom font loading
-	- [x] raw text rendering
-	- [x] simple buttons 
-	- [x] imgui interna
-- [x] gizmos
-	- [x] draws simple line-based geometry
-	- [x] lines, spheres, cubes, cylinders, frustums, planes supported
-- [x] collisions
-	- [x] collision volumes and intersection logic 
-	- [x] easily debuggable using gizmos 
-- [ ] audio integration 
-	- [x] basic audio file playback 
-	- [ ] better .dll handling 
-- [ ] networking integration
+- [x] Vertex/fragment shaders
+	- [x] Easy selection as active
+	- [x] Easy uniform management
+	- [x] Texture as uniform management
+- [x] Render target manager
+	- [x] Framebuffers creation management
+	- [x] Select active target(s)
+	- [x] Copy from target to target 
+- [x] ImGui
+	- [x] Font management, custom font loading
+	- [x] Raw text rendering
+	- [x] Simple buttons 
+- [x] Gizmos
+	- [x] Draws simple line-based geometry
+	- [x] Lines, spheres, cubes, cylinders, frustums, planes supported
+- [x] Collisions
+	- [x] Collision volumes and intersection logic 
+	- [x] Easily debuggable using gizmos 
+- [ ] Audio integration 
+	- [x] Basic audio file playback 
+	- [ ] Better .dll handling 
+- [ ] Networking integration
