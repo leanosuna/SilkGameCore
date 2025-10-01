@@ -16,9 +16,10 @@
         {
             if (PreDraw != null)
                 PreDraw.Invoke();
-
+            //Console.WriteLine($"part {Name}");
             foreach (var mesh in Meshes)
             {
+
                 if (mesh.PreDraw != null)
                     mesh.PreDraw.Invoke();
                 mesh.Draw();

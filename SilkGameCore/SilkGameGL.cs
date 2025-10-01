@@ -2,12 +2,14 @@
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
 using SilkGameCore.Input;
+using SilkGameCore.Network;
 using SilkGameCore.Rendering;
 using SilkGameCore.Rendering.Gizmos;
 using SilkGameCore.Rendering.GUI;
 using SilkGameCore.Rendering.RT;
 using SilkGameCore.Rendering.Textures;
 using SilkGameCore.Sound;
+using System.Numerics;
 
 namespace SilkGameCore
 {
@@ -23,6 +25,9 @@ namespace SilkGameCore
         public Gizmos Gizmos { get; private set; }
         public GUIManager GUIManager { get; private set; }
         public SoundManager SoundManager { get; private set; }
+        public NetworkManager NetworkManager { get; private set; }
+
+        private bool _delayedLoadDone = false;
         public SilkGameGL()
         {
             var options = WindowOptions.Default;
@@ -103,25 +108,66 @@ namespace SilkGameCore
         {
             Window.Center();
             GL = GL.GetApi(Window);
+            //DelayedLoad();
+
             InputManager = new InputManager(this);
+            GUIManager = new GUIManager(this);
+
+        }
+        void DelayedLoad()
+        {
             FullScreenQuad = new FullScreenQuad(this);
             TextureManager = new TextureManager(this);
             RTManager = new RTManager(this);
-            GUIManager = new GUIManager(this);
-
             Gizmos = new Gizmos(GL);
-            Initialize();
             SoundManager = new SoundManager();
+            //NetworkManager = new NetworkManager(this);
+            Initialize();
+            _delayedLoadDone = true;
         }
+        bool _firstFrame = true;
         private void InternalUpdate(double deltaTime)
         {
+            if (!_delayedLoadDone)
+            {
+                if (!_firstFrame)
+                {
+                    DelayedLoad();
+                }
+                _firstFrame = false;
+                return;
+            }
+
             InputManager.Update();
+
+            //NetworkManager.Update();
             Update(deltaTime);
-            GUIManager.Update(deltaTime);
+        }
+
+        /// <summary>
+        /// This allows you to show a first frame with a message, progress bar 
+        /// or whatever you want while the Initialize() function runs
+        /// </summary>
+        protected virtual void InitialLoadScreen()
+        {
+
+            var str = "Loading game assets...";
+
+            GUIManager.DrawCenteredText(str,
+                new Vector2(Window.Position.X, Window.Position.Y) +
+                new Vector2(WindowSize.X / 2, WindowSize.Y / 2), Vector4.One, 30);
+            GUIManager.Render();
         }
         private void InternalRender(double deltaTime)
         {
+            if (!_delayedLoadDone)
+            {
+                InitialLoadScreen();
+                return;
+            }
+            GUIManager.Update(deltaTime);
             Render(deltaTime);
+
             GUIManager.Render();
         }
         private void InternalFramebufferResize(Vector2D<int> size)
@@ -134,7 +180,6 @@ namespace SilkGameCore
         {
             OnClose();
         }
-
 
     }
 }

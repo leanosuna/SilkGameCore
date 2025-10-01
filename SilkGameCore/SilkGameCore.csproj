@@ -17,6 +17,7 @@
 
   <ItemGroup>
     <PackageReference Include="ManagedBass" Version="4.0.1" />
+    <PackageReference Include="RiptideNetworking.Riptide" Version="2.2.1" />
     <PackageReference Include="Silk.NET.Assimp" Version="2.22.0" />
     <PackageReference Include="Silk.NET.Input" Version="2.22.0" />
     <PackageReference Include="Silk.NET.Maths" Version="2.22.0" />
@@ -33,5 +34,9 @@
   <ItemGroup>
     <Folder Include="Files\Sound\" />
   </ItemGroup>
+
+  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+    <Exec Command="call &quot;C:\dev\SILK\copy-to-local-nuget.bat&quot;" />
+  </Target>
   
 </Project>

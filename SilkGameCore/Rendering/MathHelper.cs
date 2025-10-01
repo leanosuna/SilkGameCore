@@ -28,5 +28,11 @@ namespace SilkGameCore.Rendering
         {
             return radians * 180.0f / MathF.PI;
         }
+
+        public static float Lerp(float start, float end, float amount)
+        {
+            return (1 - amount) * start + amount * end;
+
+        }
     }
 }

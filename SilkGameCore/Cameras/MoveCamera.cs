@@ -1,4 +1,5 @@
-﻿using System.Numerics;
+﻿using SilkGameCore.Rendering;
+using System.Numerics;
 
 namespace SilkGameCore.Cameras
 {
@@ -29,7 +30,10 @@ namespace SilkGameCore.Cameras
             {
                 Yaw += mouseDelta.X;
                 Pitch -= mouseDelta.Y;
-                Pitch = Math.Clamp(Pitch, -((MathF.PI * 0.5f) - 0.05f), (MathF.PI * 0.5f) - 0.05f);
+
+                var maxAbs = MathHelper.PiOver2 - 0.0001f;
+
+                Pitch = Math.Clamp(Pitch, -maxAbs, maxAbs);
 
                 CalculateVectors();
                 CalculateView();

@@ -66,7 +66,7 @@ namespace SilkGameCore.Rendering
             {
                 if (ignoreUniformsNotFound)
                     return;
-                throw new Exception($"{name} uniform not found on shader.");
+                throw new Exception($"[{name}] not found on shader.");
             }
             switch (value)
             {
@@ -77,19 +77,51 @@ namespace SilkGameCore.Rendering
                 case Vector2 v2: GL.Uniform2(location, v2); break;
                 case Vector3 v3: GL.Uniform3(location, v3); break;
                 case Vector4 v4: GL.Uniform4(location, v4); break;
-                case Matrix4x4 m: GL.UniformMatrix4(location, 1, false, (float*)&m); break;
 
+                case float[] fa:
+                    fixed (float* ptr = fa)
+                    {
+                        GL.Uniform1(location, (uint)fa.Length, ptr);
+                    }
+                    break;
+                case Vector2[] v2a:
+                    fixed (Vector2* ptr = v2a)
+                    {
+                        GL.Uniform2(location, (uint)v2a.Length, (float*)ptr);
+                    }
+                    break;
+                case Vector3[] v3a:
+                    fixed (Vector3* ptr = v3a)
+                    {
+                        GL.Uniform3(location, (uint)v3a.Length, (float*)ptr);
+                    }
+                    break;
+                case Vector4[] v4a:
+                    fixed (Vector4* ptr = v4a)
+                    {
+                        GL.Uniform4(location, (uint)v4a.Length, (float*)ptr);
+                    }
+                    break;
+
+                case Matrix4x4 m:
+                    GL.UniformMatrix4(location, 1, false, (float*)&m); break;
+                case Matrix4x4[] mm:
+                    fixed (Matrix4x4* ptr = mm)
+                    {
+                        GL.UniformMatrix4(location, (uint)mm.Length, false, (float*)ptr);
+                    }
+                    break;
                 default: throw new Exception($"{typeof(T).Name} missing GL.UniformT entry");
             }
 
         }
-        public void SetTextureUniform(uint tex, string name, int slot)
+        public void SetTextureUniform(string name, uint tex, int slot)
         {
             GL.ActiveTexture(TextureUnit.Texture0 + slot);
             GL.BindTexture(TextureTarget.Texture2D, tex);
             SetUniform(name, slot);
         }
-        public void SetTextureUniform(GLTexture tex, string name, int slot)
+        public void SetTextureUniform(string name, GLTexture tex, int slot)
         {
             tex.Bind(TextureUnit.Texture0 + slot);
             SetUniform(name, slot);

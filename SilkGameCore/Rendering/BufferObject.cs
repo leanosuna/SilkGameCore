@@ -9,6 +9,15 @@ namespace SilkGameCore.Rendering
         private BufferTargetARB _bufferType;
         private GL _gl;
 
+        public unsafe BufferObject(GL gl, nuint size, void* data)
+        {
+            _gl = gl;
+            _bufferType = BufferTargetARB.ArrayBuffer;
+
+            _handle = _gl.GenBuffer();
+            Bind();
+            _gl.BufferData(_bufferType, size, data, BufferUsageARB.StaticDraw);
+        }
         public unsafe BufferObject(GL gl, Span<TDataType> data, BufferTargetARB bufferType)
         {
             _gl = gl;

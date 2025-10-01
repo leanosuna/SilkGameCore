@@ -18,15 +18,15 @@ theme:
       toggle:
         icon: material/toggle-switch
         name: Switch to dark mode    
-      primary: teal
+      primary: scheme
       accent: lime
 
     - scheme: slate
       toggle:
         icon: material/toggle-switch-off-outline 
         name: Switch to light mode
-      primary: teal
-      accent: purple 
+      primary: scheme
+      accent: lime
 plugins:
   # - social
   - search
@@ -35,3 +35,6 @@ nav:
   - Home: index.md
   # - Getting Started: getting-started.md
   # - API: api.md
+
+extra_css:
+- stylesheets/extra.css

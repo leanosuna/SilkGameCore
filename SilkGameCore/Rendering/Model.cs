@@ -1,5 +1,6 @@
 using Silk.NET.Assimp;
 using Silk.NET.OpenGL;
+using SilkGameCore.Rendering.Animation;
 using SilkGameCore.Rendering.Textures;
 using System.Numerics;
 using AssimpMesh = Silk.NET.Assimp.Mesh;
@@ -8,7 +9,18 @@ namespace SilkGameCore.Rendering
 {
     public class Model : IDisposable
     {
-        const AssimpPPS defaultOptions =
+        private readonly GL GL;
+        private readonly bool _extractTextures;
+        private Assimp _assimp;
+        private List<GLTexture> _texturesLoaded = new List<GLTexture>();
+        public string Directory { get; protected set; } = string.Empty;
+        private MeshAttributes _meshAttributes;
+        public List<ModelPart> Parts { get; protected set; } = new List<ModelPart>();
+
+        public Dictionary<string, BoneInfo> BoneInfoMap = new Dictionary<string, BoneInfo>();
+        public int BoneCount { get; private set; } = 0;
+
+        public const AssimpPPS DefaultAssimpPost =
                 AssimpPPS.FindDegenerates |
                 AssimpPPS.FindInvalidData |
                 AssimpPPS.FlipUVs |
@@ -16,22 +28,22 @@ namespace SilkGameCore.Rendering
                 AssimpPPS.ImproveCacheLocality |
                 AssimpPPS.OptimizeMeshes |
                 AssimpPPS.Triangulate;
-        public Model(GL gl, string path, AssimpPPS postProcessSteps = defaultOptions, bool extractTextures = false)
+
+        public const MeshAttributes DefaultMeshAttributes =
+            MeshAttributes.Position3D |
+            MeshAttributes.TexCoord |
+            MeshAttributes.Normals;
+        public Model(GL gl, string path, AssimpPPS postProcessSteps = DefaultAssimpPost,
+            MeshAttributes meshAttributes = DefaultMeshAttributes, bool extractTextures = false)
         {
             var assimp = Assimp.GetApi();
             _assimp = assimp;
+            _meshAttributes = meshAttributes;
             GL = gl;
             _extractTextures = extractTextures;
             Console.WriteLine($"Loading 3D model [{path}]");
             LoadModel(path, postProcessSteps);
         }
-        private readonly GL GL;
-        private readonly bool _extractTextures;
-        private Assimp _assimp;
-        private List<GLTexture> _texturesLoaded = new List<GLTexture>();
-        public string Directory { get; protected set; } = string.Empty;
-
-        public List<ModelPart> Parts { get; protected set; } = new List<ModelPart>();
 
         public void Draw()
         {
@@ -54,6 +66,7 @@ namespace SilkGameCore.Rendering
             Directory = Path.GetDirectoryName(path) ?? string.Empty;
 
             ProcessNode(scene->MRootNode, scene, Matrix4x4.Identity);
+
         }
 
         private unsafe void ProcessNode(Node* node, Scene* scene, Matrix4x4 parentTransform)
@@ -64,6 +77,7 @@ namespace SilkGameCore.Rendering
             Matrix4x4 currentTransform = parentTransform * node->MTransformation;
 
             var relativeTransform = Matrix4x4.Transpose(currentTransform);
+            //var relativeTransform = currentTransform;
             for (var i = 0; i < node->MNumMeshes; i++)
             {
                 var assimpMesh = scene->MMeshes[node->MMeshes[i]];
@@ -78,7 +92,8 @@ namespace SilkGameCore.Rendering
             if (!string.IsNullOrEmpty(node->MName))
                 name = node->MName;
 
-            Parts.Add(new ModelPart(name, meshes));
+            if (meshes.Count > 0)
+                Parts.Add(new ModelPart(name, meshes));
 
             for (var i = 0; i < node->MNumChildren; i++)
             {
@@ -97,8 +112,14 @@ namespace SilkGameCore.Rendering
             for (uint i = 0; i < mesh->MNumVertices; i++)
             {
                 Vertex vertex = new Vertex();
-                vertex.BoneIds = new int[Vertex.MAX_BONE_INFLUENCE];
-                vertex.Weights = new float[Vertex.MAX_BONE_INFLUENCE];
+
+                //Console.WriteLine($"mesh bones{mesh->MNumBones}");
+                for (int b = 0; b < Vertex.MAX_BONE_INFLUENCE; b++)
+                {
+                    vertex.BoneIds[b] = -1;
+                    vertex.Weights[b] = 0.0f;
+                }
+
 
                 //vertex.Position = Vector3.Transform(mesh->MVertices[i], transform);
                 vertex.Position = mesh->MVertices[i];
@@ -142,8 +163,90 @@ namespace SilkGameCore.Rendering
 
             }
 
-            var result = new Mesh(GL, BuildVertices(vertices), BuildIndices(indices), textures);
+
+            if (_meshAttributes.HasFlag(MeshAttributes.boneIds) && _meshAttributes.HasFlag(MeshAttributes.boneWeights))
+            {
+                ExtractBoneWeights(vertices, mesh, scene);
+            }
+
+            var result = new Mesh(GL, _meshAttributes, vertices, indices.ToArray(), textures);
             return result;
+        }
+
+
+        private unsafe void ExtractBoneWeights(List<Vertex> vertices, AssimpMesh* mesh, Scene* scene)
+        {
+            // Temporary dictionary to collect all influences per vertex
+            var vertexInfluences = new Dictionary<int, List<(int BoneId, float Weight)>>();
+
+            for (int boneIndex = 0; boneIndex < mesh->MNumBones; boneIndex++)
+            {
+                string boneName = mesh->MBones[boneIndex]->MName;
+
+                if (!BoneInfoMap.TryGetValue(boneName, out var boneInfo))
+                {
+                    boneInfo = new BoneInfo(BoneCount, mesh->MBones[boneIndex]->MOffsetMatrix);
+                    BoneInfoMap.Add(boneName, boneInfo);
+                    BoneCount++;
+                }
+
+                int boneID = boneInfo.ID;
+
+                var weights = mesh->MBones[boneIndex]->MWeights;
+                var numWeights = mesh->MBones[boneIndex]->MNumWeights;
+
+                for (int wi = 0; wi < numWeights; wi++)
+                {
+                    int vertexId = (int)weights[wi].MVertexId;
+                    float weight = weights[wi].MWeight;
+
+                    if (!vertexInfluences.TryGetValue(vertexId, out var list))
+                    {
+                        list = new List<(int, float)>();
+                        vertexInfluences[vertexId] = list;
+                    }
+
+                    list.Add((boneID, weight));
+                }
+            }
+
+            foreach (var kvp in vertexInfluences)
+            {
+                int vertexId = kvp.Key;
+                var influences = kvp.Value;
+
+
+                List<(int BoneId, float Weight)> topInfluences;
+
+                if (influences.Count > Vertex.MAX_BONE_INFLUENCE)
+                {
+                    influences.Sort((a, b) => b.Weight.CompareTo(a.Weight));
+                    topInfluences = influences.Take(Vertex.MAX_BONE_INFLUENCE).ToList();
+
+                    float total = topInfluences.Sum(x => x.Weight);
+                    if (total > 0)
+                    {
+                        for (int i = 0; i < topInfluences.Count; i++)
+                            topInfluences[i] = (topInfluences[i].BoneId, topInfluences[i].Weight / total);
+                    }
+
+                }
+                else
+                {
+                    topInfluences = influences;
+                    for (int i = topInfluences.Count; i < Vertex.MAX_BONE_INFLUENCE; i++)
+                    {
+                        topInfluences.Add((-1, 0.0f));
+                    }
+                }
+
+                var vertex = vertices[vertexId];
+                vertex.BoneIds =
+                    new Vector4(topInfluences[0].BoneId, topInfluences[1].BoneId, topInfluences[2].BoneId, topInfluences[3].BoneId);
+                vertex.Weights =
+                    new Vector4(topInfluences[0].Weight, topInfluences[1].Weight, topInfluences[2].Weight, topInfluences[3].Weight);
+                vertices[vertexId] = vertex;
+            }
         }
 
         private unsafe List<GLTexture> LoadMaterialTextures(Material* mat, TextureType type, string typeName)
@@ -180,31 +283,6 @@ namespace SilkGameCore.Rendering
             }
             return textures;
         }
-        //Warning: modifing this also requires updating Mesh.SetupMesh()
-        private float[] BuildVertices(List<Vertex> vertexCollection)
-        {
-            var vertices = new List<float>();
-
-            foreach (var vertex in vertexCollection)
-            {
-                vertices.Add(vertex.Position.X);
-                vertices.Add(vertex.Position.Y);
-                vertices.Add(vertex.Position.Z);
-                vertices.Add(vertex.TexCoords.X);
-                vertices.Add(vertex.TexCoords.Y);
-                vertices.Add(vertex.Normal.X);
-                vertices.Add(vertex.Normal.Y);
-                vertices.Add(vertex.Normal.Z);
-            }
-
-            return vertices.ToArray();
-        }
-
-        private uint[] BuildIndices(List<uint> indices)
-        {
-            return indices.ToArray();
-        }
-
 
         public void Dispose()
         {

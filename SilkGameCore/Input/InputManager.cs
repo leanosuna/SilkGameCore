@@ -37,6 +37,7 @@ namespace SilkGameCore.Input
             MouseDelta = Vector2.Zero;
 
         }
+
         public IInputContext GetInputContext() { return _input; }
 
         public void SetMouseMode(CursorMode mode)
