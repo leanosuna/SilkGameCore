@@ -5,10 +5,10 @@ namespace SilkGameCore.Rendering.Gizmos.Geometries
     internal abstract class GizmoGeometry
     {
         private readonly GL GL;
-        private VertexArrayObject<float, ushort> _VAO;
+        private VertexArrayObject<float, ushort> _VAO = default!;
         private uint _indicesLength;
-        internal ushort[] indices;
-        internal float[] vertices;
+        internal ushort[] indices = default!;
+        internal float[] vertices = default!;
 
         public GizmoGeometry(GL gl)
         {

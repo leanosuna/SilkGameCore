@@ -13,20 +13,40 @@ namespace SilkGameCore.Rendering
             return Matrix4x4.CreateFromQuaternion(RotationFromYawPitchRoll(yaw, pitch, roll));
         }
 
+        public static void Invert(this ref Matrix4x4 m)
+        {
+            Matrix4x4.Invert(m, out m);
+        }
+        public static void Transpose(this ref Matrix4x4 m)
+        {
+            m = Matrix4x4.Transpose(m);
+        }
+
         public static Quaternion RotationFromYawPitchRoll(float yaw, float pitch, float roll)
         {
             return Quaternion.CreateFromAxisAngle(Vector3.UnitY, yaw) *
                 Quaternion.CreateFromAxisAngle(Vector3.UnitX, pitch) *
                 Quaternion.CreateFromAxisAngle(Vector3.UnitZ, roll);
         }
-
-        public static float ToRad(float degrees)
+        public static void ExtractYawPitchRoll(this Quaternion r, out float yaw, out float pitch, out float roll)
+        {
+            yaw = MathF.Atan2(2.0f * (r.Y * r.W + r.X * r.Z), 1.0f - 2.0f * (r.X * r.X + r.Y * r.Y));
+            pitch = MathF.Asin(2.0f * (r.X * r.W - r.Y * r.Z));
+            roll = MathF.Atan2(2.0f * (r.X * r.Y + r.Z * r.W), 1.0f - 2.0f * (r.X * r.X + r.Z * r.Z));
+        }
+        public static float ToRad(this float degrees)
         {
             return degrees * MathF.PI / 180.0f;
         }
-        public static float ToDeg(float radians)
+        public static float ToDeg(this float radians)
         {
             return radians * 180.0f / MathF.PI;
+        }
+
+        public static float Lerp(float start, float end, float amount)
+        {
+            return (1 - amount) * start + amount * end;
+
         }
     }
 }

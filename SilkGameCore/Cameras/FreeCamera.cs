@@ -83,7 +83,7 @@ namespace SilkGameCore.Cameras
                 updateCameraVectors = true;
             }
 
-            Pitch = Math.Clamp(Pitch, -0.9f, .9f);
+
             if (updateCameraVectors)
                 CalculateVectors();
 

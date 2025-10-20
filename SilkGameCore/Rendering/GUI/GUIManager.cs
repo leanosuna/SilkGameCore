@@ -18,7 +18,8 @@ namespace SilkGameCore.Rendering.GUI
             _game = game;
             GL = game.GL;
 
-            _controller = new ImGuiController(GL, game.Window, game.InputManager.GetInputContext());
+            var inputContext = game.InputManager.GetInputContext();
+            _controller = new ImGuiController(GL, game.Window, inputContext);
 
             LoadDefaultFont();
 
@@ -96,6 +97,22 @@ namespace SilkGameCore.Rendering.GUI
             drawList.AddText(position, ImGui.ColorConvertFloat4ToU32(color), text);
         }
 
+        /// <summary>
+        /// Draws text on the screen without any window or background, centered on a position
+        /// </summary>
+        /// <param name="text">The text to draw</param>
+        /// <param name="position">The position coordinates of the text to draw</param>
+        /// <param name="color">The color of the text to draw</param>
+        /// <param name="size">The font size of the text to draw</param>
+        public void DrawCenteredText(string text, Vector2 position, Vector4 color, int size)
+        {
+            SetFontSize(size);
+            var drawList = ImGui.GetForegroundDrawList();
+            var textSize = ImGui.CalcTextSize(text);
+
+            drawList.AddText(position - textSize, ImGui.ColorConvertFloat4ToU32(color), text);
+        }
+
 
         public void DrawImg(string name, string path, Vector2 position, Vector2 size)
         {
@@ -141,6 +158,7 @@ namespace SilkGameCore.Rendering.GUI
         {
             _buttonId = 0;
             _controller.Update((float)delta);
+            //ImGui.NewFrame();
         }
         public void Render()
         {

@@ -157,7 +157,6 @@ namespace SilkGameCore.Collisions
         /// <returns>Result of testing for containment between this <see cref="BoundingFrustum"/> and specified <see cref="AxisAlignedBoundingBox"/>.</returns>
         public ContainmentType Contains(AxisAlignedBoundingBox box)
         {
-            var result = default(ContainmentType);
             var intersects = false;
             for (var i = 0; i < PlaneCount; ++i)
             {

@@ -9,11 +9,15 @@ namespace SilkGameCore.Rendering.RT
         private GL GL;
         private Vector2D<int> _windowSize;
         internal const string DefaultColorName = "color";
-
+        private RenderTarget _screen = new RenderTarget();
         internal RTManager(SilkGameGL game)
         {
             GL = game.GL;
             _windowSize = game.WindowSize;
+            _screen.FrameBuffer = 0;
+            _screen.Width = _windowSize.X;
+            _screen.Height = _windowSize.Y;
+
         }
         /// <summary>
         /// Creates a new render target (must have an unique name)
@@ -151,6 +155,9 @@ namespace SilkGameCore.Rendering.RT
         /// <returns>The render target object</returns>
         public RenderTarget GetTarget(string name)
         {
+            if (name == "screen")
+                return _screen;
+
             var n = name.ToLower();
             if (!_targets.TryGetValue(n, out var rt))
                 throw new Exception($"target '{n}' not found.");

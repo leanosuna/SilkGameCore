@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <Title>Silk Game Core</Title>
     <Company></Company>
     <Product></Product>
@@ -13,10 +13,12 @@
     <Description>3D rendering and game framework using Silk.NET</Description>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
     <AnalysisLevel>6.0</AnalysisLevel>
+    <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="ManagedBass" Version="4.0.1" />
+    <PackageReference Include="RiptideNetworking.Riptide" Version="2.2.1" />
     <PackageReference Include="Silk.NET.Assimp" Version="2.22.0" />
     <PackageReference Include="Silk.NET.Input" Version="2.22.0" />
     <PackageReference Include="Silk.NET.Maths" Version="2.22.0" />

@@ -7,7 +7,7 @@ namespace SilkGameCore.Input
     {
         private SilkGameGL _game;
         private IInputContext _input;
-        private IKeyboard _keyboard;
+        private IKeyboard _keyboard = default!;
         private IMouse _mouse;
         private Vector2 _lastMousePosition;
 
@@ -37,6 +37,7 @@ namespace SilkGameCore.Input
             MouseDelta = Vector2.Zero;
 
         }
+
         public IInputContext GetInputContext() { return _input; }
 
         public void SetMouseMode(CursorMode mode)
