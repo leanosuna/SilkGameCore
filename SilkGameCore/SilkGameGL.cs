@@ -15,17 +15,23 @@ namespace SilkGameCore
 {
     public abstract class SilkGameGL
     {
-        public GL GL { get; private set; }
+        public GL GL { get; private set; } = default!;
         public IWindow Window { get; private set; }
         public Vector2D<int> WindowSize { get; private set; }
-        public InputManager InputManager { get; private set; }
-        public FullScreenQuad FullScreenQuad { get; private set; }
-        public RTManager RTManager { get; private set; }
-        public TextureManager TextureManager { get; private set; }
-        public Gizmos Gizmos { get; private set; }
-        public GUIManager GUIManager { get; private set; }
-        public SoundManager SoundManager { get; private set; }
-        public NetworkManager NetworkManager { get; private set; }
+        public InputManager InputManager { get; private set; } = default!;
+        public FullScreenQuad FullScreenQuad { get; private set; } = default!;
+        public RTManager RTManager { get; private set; } = default!;
+        public TextureManager TextureManager { get; private set; } = default!;
+        public Gizmos Gizmos { get; private set; } = default!;
+        public GUIManager GUIManager { get; private set; } = default!;
+        public SoundManager SoundManager { get; private set; } = default!;
+        public NetworkManager NetworkManager { get; private set; } = default!;
+
+        public double Time { get; private set; } = 0;
+        public double FrameTime { get; private set; } = 0;
+        public double FPS { get; private set; } = 0;
+        public double FPS_SAMPLE { get; private set; } = 0;
+        public double FPS_SAMPLE_RATE { get; set; } = 0.3;
 
         private bool _delayedLoadDone = false;
         public SilkGameGL()
@@ -36,7 +42,6 @@ namespace SilkGameCore
             options.VSync = true;
             var glApi = new APIVersion(4, 1);
             options.API = new GraphicsAPI(ContextAPI.OpenGL, ContextProfile.Core, ContextFlags.Default, glApi);
-            //GLShader.APIVersion = glApi;
 
             Window = Silk.NET.Windowing.Window.Create(options);
             WindowSize = Window.Size;
@@ -47,11 +52,11 @@ namespace SilkGameCore
             Window.FramebufferResize += InternalFramebufferResize;
             Window.Closing += InternalOnClose;
 
+
         }
         public SilkGameGL(WindowOptions options)
         {
             Window = Silk.NET.Windowing.Window.Create(options);
-            //GLShader.APIVersion = options.API.Version;
 
             WindowSize = Window.Size;
 
@@ -106,6 +111,7 @@ namespace SilkGameCore
 
         private void InternalLoad()
         {
+            Log.Info("Game starting");
             Window.Center();
             GL = GL.GetApi(Window);
             //DelayedLoad();
@@ -150,7 +156,6 @@ namespace SilkGameCore
         /// </summary>
         protected virtual void InitialLoadScreen()
         {
-
             var str = "Loading game assets...";
 
             GUIManager.DrawCenteredText(str,
@@ -158,8 +163,19 @@ namespace SilkGameCore
                 new Vector2(WindowSize.X / 2, WindowSize.Y / 2), Vector4.One, 30);
             GUIManager.Render();
         }
+        double _timeAcc = 0;
         private void InternalRender(double deltaTime)
         {
+            FrameTime = deltaTime;
+            Time += deltaTime;
+            FPS = 1.0 / deltaTime;
+            _timeAcc += deltaTime;
+            if (_timeAcc >= FPS_SAMPLE_RATE)
+            {
+                FPS_SAMPLE = FPS;
+                _timeAcc = 0;
+            }
+
             if (!_delayedLoadDone)
             {
                 InitialLoadScreen();

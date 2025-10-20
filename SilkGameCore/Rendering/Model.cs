@@ -12,13 +12,13 @@ namespace SilkGameCore.Rendering
         private readonly GL GL;
         private readonly bool _extractTextures;
         private Assimp _assimp;
-        private List<GLTexture> _texturesLoaded = new List<GLTexture>();
+        public List<GLTexture> _texturesLoaded = new List<GLTexture>();
         public string Directory { get; protected set; } = string.Empty;
         private MeshAttributes _meshAttributes;
         public List<ModelPart> Parts { get; protected set; } = new List<ModelPart>();
 
-        public Dictionary<string, BoneInfo> BoneInfoMap = new Dictionary<string, BoneInfo>();
-        public int BoneCount { get; private set; } = 0;
+        public Dictionary<string, BoneInfo> BoneInfoMap { get; } = new Dictionary<string, BoneInfo>();
+
 
         public const AssimpPPS DefaultAssimpPost =
                 AssimpPPS.FindDegenerates |
@@ -27,7 +27,8 @@ namespace SilkGameCore.Rendering
                 AssimpPPS.JoinIdenticalVertices |
                 AssimpPPS.ImproveCacheLocality |
                 AssimpPPS.OptimizeMeshes |
-                AssimpPPS.Triangulate;
+                AssimpPPS.Triangulate |
+                AssimpPPS.LimitBoneWeights;
 
         public const MeshAttributes DefaultMeshAttributes =
             MeshAttributes.Position3D |
@@ -41,7 +42,8 @@ namespace SilkGameCore.Rendering
             _meshAttributes = meshAttributes;
             GL = gl;
             _extractTextures = extractTextures;
-            Console.WriteLine($"Loading 3D model [{path}]");
+            Log.Info($"loading model {path}");
+
             LoadModel(path, postProcessSteps);
         }
 
@@ -61,11 +63,17 @@ namespace SilkGameCore.Rendering
                 var error = _assimp.GetErrorStringS();
                 throw new Exception(error);
             }
-
-            //Directory = path;
             Directory = Path.GetDirectoryName(path) ?? string.Empty;
 
             ProcessNode(scene->MRootNode, scene, Matrix4x4.Identity);
+
+            //Bones = _boneDict.Select(b => b.Value).ToArray();
+
+            //for (var i = 0; i < Bones.Length; i++)
+            //{
+            //    Log.Debug($"b{i} {Bones[i].Name}");
+            //}
+
 
         }
 
@@ -74,10 +82,13 @@ namespace SilkGameCore.Rendering
             var meshes = new List<Mesh>();
 
 
-            Matrix4x4 currentTransform = parentTransform * node->MTransformation;
+            //Matrix4x4 currentTransform = parentTransform * node->MTransformation;
+            //var relativeTransform = Matrix4x4.Transpose(currentTransform);
+            var nTransform = node->MTransformation;
+            nTransform.Transpose();
+            Matrix4x4 currentTransform = parentTransform * nTransform;
+            var relativeTransform = currentTransform;
 
-            var relativeTransform = Matrix4x4.Transpose(currentTransform);
-            //var relativeTransform = currentTransform;
             for (var i = 0; i < node->MNumMeshes; i++)
             {
                 var assimpMesh = scene->MMeshes[node->MMeshes[i]];
@@ -160,6 +171,38 @@ namespace SilkGameCore.Rendering
             // where model loading fails if it can't find the textures for that model.
             if (_extractTextures)
             {
+                //_assimp.GetMaterialTexture()
+                //LoadMaterialTextures(scene->MMaterials);
+                var texCount = scene->MNumTextures;
+                ////gloss, difuse, normal, specular
+                for (var i = 0; i < texCount; i++)
+                {
+                    var tex = scene->MTextures[i];
+                    var name = tex->MFilename.AsString;
+                    var w = tex->MWidth;
+                    var h = tex->MHeight;
+
+                    var t = new GLTexture(GL, tex->PcData, w, h);
+
+                    _texturesLoaded.Add(t);
+
+                }
+
+                //var mc = scene->MNumMaterials;
+                //for (var i = 0; i < mc; i++)
+                //{
+                //    var mat = scene->MMaterials[i];
+                //    //var pc = mat->MNumProperties;
+                //    //for (var j = 0; j < pc; j++)
+                //    //{
+                //    //    var p = mat->MProperties[j];
+                //    //    var key = p->MKey.AsString;
+
+                //    //}
+                //    LoadMaterialTextures(mat, TextureType.Diffuse);
+
+                //}
+
 
             }
 
@@ -179,21 +222,24 @@ namespace SilkGameCore.Rendering
             // Temporary dictionary to collect all influences per vertex
             var vertexInfluences = new Dictionary<int, List<(int BoneId, float Weight)>>();
 
-            for (int boneIndex = 0; boneIndex < mesh->MNumBones; boneIndex++)
+            for (int boneID = 0; boneID < mesh->MNumBones; boneID++)
             {
-                string boneName = mesh->MBones[boneIndex]->MName;
+                string boneName = mesh->MBones[boneID]->MName;
 
-                if (!BoneInfoMap.TryGetValue(boneName, out var boneInfo))
-                {
-                    boneInfo = new BoneInfo(BoneCount, mesh->MBones[boneIndex]->MOffsetMatrix);
-                    BoneInfoMap.Add(boneName, boneInfo);
-                    BoneCount++;
-                }
 
-                int boneID = boneInfo.ID;
+                //if (!_boneDict.TryGetValue(boneName, out var boneInfo))
+                //{
+                //    _boneDict.Add(boneName, new Animation.Bone(boneName,
+                //        //Matrix4x4.Transpose
+                //        (mesh->MBones[boneID]->MOffsetMatrix)));
 
-                var weights = mesh->MBones[boneIndex]->MWeights;
-                var numWeights = mesh->MBones[boneIndex]->MNumWeights;
+                //}
+                var offset = mesh->MBones[boneID]->MOffsetMatrix;
+                //offset.Transpose();
+                BoneInfoMap.TryAdd(boneName, new BoneInfo(boneID, offset));
+
+                var weights = mesh->MBones[boneID]->MWeights;
+                var numWeights = mesh->MBones[boneID]->MNumWeights;
 
                 for (int wi = 0; wi < numWeights; wi++)
                 {
@@ -220,6 +266,7 @@ namespace SilkGameCore.Rendering
 
                 if (influences.Count > Vertex.MAX_BONE_INFLUENCE)
                 {
+                    //Log.Debug($"ami {vertexId}");
                     influences.Sort((a, b) => b.Weight.CompareTo(a.Weight));
                     topInfluences = influences.Take(Vertex.MAX_BONE_INFLUENCE).ToList();
 
@@ -249,7 +296,7 @@ namespace SilkGameCore.Rendering
             }
         }
 
-        private unsafe List<GLTexture> LoadMaterialTextures(Material* mat, TextureType type, string typeName)
+        private unsafe List<GLTexture> LoadMaterialTextures(Material* mat, TextureType type)
         {
             var textureCount = _assimp.GetMaterialTextureCount(mat, type);
             List<GLTexture> textures = new List<GLTexture>();
@@ -274,7 +321,7 @@ namespace SilkGameCore.Rendering
                 }
                 if (!skip)
                 {
-                    var texture = new GLTexture(GL, Directory, type);
+                    var texture = new GLTexture(GL, path);
                     texture.Path = path;
                     textures.Add(texture);
                     _texturesLoaded.Add(texture);
@@ -291,7 +338,7 @@ namespace SilkGameCore.Rendering
                 part.Dispose();
             }
 
-            _texturesLoaded = null;
+            _texturesLoaded.Clear();
         }
     }
 }

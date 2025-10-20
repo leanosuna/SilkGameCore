@@ -4,139 +4,100 @@ namespace SilkGameCore.Rendering.Animation
 {
     public class Animator
     {
-        public Matrix4x4[] FinalBoneMatrices { get; private set; }
-        public Animation _animation;
-        float _currentTime = 0;
-        float _deltaTime;
-        public Animator(Animation animation)
+        public Matrix4x4[] FinalBoneMatrices { get; set; }
+
+        public Animation CurrentAnimation { get; private set; }
+
+        private AnimatedModel _animModel;
+        Dictionary<string, Animation> _animationMap = new Dictionary<string, Animation>();
+        public Matrix4x4 InverseGlobalTransform { get; set; } = default!;
+
+        public Animator(AnimatedModel model)
         {
-            _animation = animation;
+            _animModel = model;
             FinalBoneMatrices = new Matrix4x4[Vertex.MAX_BONE_COUNT];
 
             for (int i = 0; i < Vertex.MAX_BONE_COUNT; i++)
                 FinalBoneMatrices[i] = Matrix4x4.Identity;
         }
-        public void UpdateAnimation(float deltaTime)
+
+        public void Update(float deltaTime)
         {
-            _deltaTime = deltaTime;
-            if (_animation != null)
+            CurrentAnimation.Update(deltaTime);
+            var nodes = _animModel.AnimatorNodes;
+            for (var i = 0; i < nodes.Length; i++)
             {
-                _currentTime += _animation.TicksPerSecond * deltaTime;
-                _currentTime %= _animation.Duration;
-                //_currentTime += deltaTime;
-                //_currentTime %= 1;
-                //Console.WriteLine("-----------------------");
+                var node = nodes[i];
 
+                var pid = node.ParentID;
+                var parentTransform = pid != -1 ? nodes[pid].Transform : Matrix4x4.Identity;
 
-                CalculateBoneTransform(_animation.RootNode, Matrix4x4.Identity);
+                Matrix4x4 localTransform;
+                if (node.IsBone)
+                {
+                    var animTransform = CurrentAnimation.Transforms[node.ModelBoneID];
+
+                    animTransform.Transpose();
+
+                    localTransform = animTransform;
+                }
+                else
+                    localTransform = node.BindTransform;
+
+                node.Transform = parentTransform * localTransform;
+
+                if (node.IsBone)
+                {
+                    var final = InverseGlobalTransform * node.Transform * node.Offset;
+                    final.Transpose();
+                    FinalBoneMatrices[node.ModelBoneID] = final;
+                }
             }
         }
 
-        string[] allowList = ["mixamorig6:Spine", "mixamorig6:Spine1", "mixamorig6:Spine2", "mixamorig6:Neck"];
-        void CalculateBoneTransform(AssimpNodeData node, Matrix4x4 parentTransform)
+        Vector3 SkinVertexCPU(Vertex v)
         {
-            var name = node.Name;
-            var nodeTransform = node.Transform;
-
-
-            //if (_animation.BoneMap.TryGetValue(name, out var animBone))
-            //{
-            //    //if (animBone.Name == "mixamorig6:Hips")
-            //    //{
-            //    animBone.Update(nodeTransform, _currentTime);
-            //    nodeTransform = Matrix4x4.Transpose(animBone.Transform);
-            //    //nodeTransform = animBone.Transform;
-            //    //}
-            //}
-
-
-            var globalTransform = parentTransform * nodeTransform;
-
-            var map = _animation.BoneInfoMap;
-            if (map.TryGetValue(name, out var boneinfo))
+            var pos = v.Position;
+            int[] boneIDs = [(int)v.BoneIds.X, (int)v.BoneIds.Y, (int)v.BoneIds.Z, (int)v.BoneIds.W];
+            float[] weights = [v.Weights.X, v.Weights.Y, v.Weights.Z, v.Weights.W];
+            //Vector3 skinned = Vector3.Zero;
+            Matrix4x4 boneTransform = new Matrix4x4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+            for (int i = 0; i < boneIDs.Length; i++)
             {
-                int index = boneinfo.ID;
-                var offset = boneinfo.Offset;
+                var boneID = boneIDs[i];
+                //if (boneID >= 0)
+                //{ 
+                //    var m = FinalBoneMatrices[boneID];
+                //    var transformed = Vector3.Transform(pos, m); // beware your row/column convention here
+                //    skinned += transformed * weights[i];
+                //}
 
-                var mx = globalTransform * offset;
-
-                FinalBoneMatrices[index] = Matrix4x4.Transpose(mx);
+                if (boneID >= 0)
+                    boneTransform += FinalBoneMatrices[boneID] * weights[i];
 
             }
-
-            //foreach (var child in node.Children)
-            //    CalculateBoneTransform(child, globalTransform);
-
-
-            foreach (var child in node.Children)
-                CalculateBoneTransform(child, globalTransform);
-
+            return Vector3.Transform(pos, boneTransform);
+            //return skinned;
         }
 
-        //public void DrawDebug(Gizmos.Gizmos gizmos)
-        //{
-        //    Console.WriteLine("---");
-        //    DrawDebugRec(gizmos, _animation.RootNode, 0);
-        //}
-        //void DrawDebugRec(Gizmos.Gizmos gizmos, AssimpNodeData node, int level)
-        //{
-        //    var start = node.BonePosition;
-        //    foreach (var child in node.Children)
-        //    {
-        //        var end = child.BonePosition;
-        //        gizmos.AddLine(start, end, levelColors[level % 7]);
-        //        gizmos.AddCube(end, new Vector3(0.02f), levelColors[level % 7]);
-        //        Console.WriteLine($"l{level} {node.Name} - {start}->{end}");
-
-        //        DrawDebugRec(gizmos, child, level + 1);
-        //    }
-        //}
-
-        //public void DrawDebug(SilkGameGL game, Matrix4x4 vp)
-        //{
-        //    var gizmos = game.Gizmos;
-        //    var gui = game.GUIManager;
-
-        //    var bones = _animation.Bones;
-        //    for (int i = 0; i < bones.Length; i++)
-        //    {
-        //        var position = bones[i].CurrentPosition;
-        //        gizmos.AddCube(position, new Vector3(0.1f), Vector3.One);
-
-        //        Vector4 clipSpacePos = Vector4.Transform(new Vector4(position, 1.0f), vp);
-        //        Vector3 ndc = new Vector3(
-        //            clipSpacePos.X / clipSpacePos.W,
-        //            clipSpacePos.Y / clipSpacePos.W,
-        //            clipSpacePos.Z / clipSpacePos.W
-        //        );
-        //        float screenX = (ndc.X + 1f) * 0.5f * game.WindowSize.X;
-        //        float screenY = (1f - ndc.Y) * 0.5f * game.WindowSize.Y;
-
-        //        var posv2 = new Vector2(screenX, screenY);
-        //        gui.DrawText(bones[i].Name, posv2, Vector4.One, 10);
-
-        //    }
-        //}
-        Matrix4x4 transformS()
+        public void AddAnimation(Animation animation)
         {
-            var m = Matrix4x4.CreateTranslation(new Vector3(0, 1 * _currentTime, 0));
-            return m;
+            if (!_animationMap.TryAdd(animation.Name, animation))
+                throw new Exception("Animations must be unique");
         }
-
-        Matrix4x4 transformS1()
+        public void SelectAnimation(string name, bool fromStart = true)
         {
-            var m = Matrix4x4.CreateTranslation(new Vector3(0, 1, 0));
-            return m;
-        }
-
-        Matrix4x4 transformS2()
-        {
-            var q = Quaternion.CreateFromAxisAngle(new Vector3(0, 1, 0), MathF.Sin(_currentTime * MathF.PI * 2));
-            var m = Matrix4x4.CreateFromQuaternion(q);
-            return m;
+            if (!_animationMap.TryGetValue(name, out var anim))
+            {
+                throw new Exception($"Animation {name} not found");
+            }
+            CurrentAnimation = anim;
+            if (fromStart)
+                CurrentAnimation.Reset();
         }
 
 
     }
+
 
 }

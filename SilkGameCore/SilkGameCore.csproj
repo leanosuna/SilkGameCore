@@ -5,7 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
     <Title>Silk Game Core</Title>
     <Company></Company>
     <Product></Product>
@@ -13,6 +13,7 @@
     <Description>3D rendering and game framework using Silk.NET</Description>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
     <AnalysisLevel>6.0</AnalysisLevel>
+    <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,9 +35,5 @@
   <ItemGroup>
     <Folder Include="Files\Sound\" />
   </ItemGroup>
-
-  <Target Name="PostBuild" AfterTargets="PostBuildEvent">
-    <Exec Command="call &quot;C:\dev\SILK\copy-to-local-nuget.bat&quot;" />
-  </Target>
   
 </Project>

@@ -281,7 +281,6 @@ namespace SilkGameCore.Collisions
         /// <returns>The new <see cref="BoundingSphere"/>.</returns>
         public static BoundingSphere CreateMerged(BoundingSphere original, BoundingSphere additional)
         {
-            BoundingSphere result;
             Vector3 ocenterToaCenter = Vector3.Subtract(additional.Center, original.Center);
             float distance = ocenterToaCenter.Length();
             if (distance <= original.Radius + additional.Radius)//intersect

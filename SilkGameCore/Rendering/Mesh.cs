@@ -19,18 +19,17 @@ namespace SilkGameCore.Rendering
         public Matrix4x4 Transform { get; internal set; }
 
         public IReadOnlyList<GLTexture> Textures { get; private set; }
-        private VertexArrayObject<float, uint> VAO { get; set; }
-        private uint IndicesLength { get; set; }
+        private VertexArrayObject<float, uint> VAO { get; set; } = default!;
+        private uint IndicesLength { get; set; } = default!;
         GL GL { get; }
 
-        BufferObject<uint> EBO;
+        BufferObject<uint> EBO = default!;
         uint _VAHandle;
         uint _VBhandle;
 
         public Action? PreDraw { get; set; } = null;
 
         private MeshAttributes _attributes;
-        private (nuint vertexSize, int elementsCount, List<(int count, VertexAttribPointerType type)> attData) _attributesData;
         private unsafe void SetupMesh(uint[] indices, List<Vertex> vertices)
         {
             IndicesLength = (uint)indices.Length;
@@ -292,12 +291,4 @@ namespace SilkGameCore.Rendering
         boneIds = 1 << 6,       // 1000000
         boneWeights = 1 << 7    //10000000
     }
-
-    unsafe struct VertexData
-    {
-        public nuint BufferSize;
-        public void* BufferData;
-    }
-
-
 }

@@ -7,7 +7,7 @@ namespace SilkGameCore.Input
     {
         private SilkGameGL _game;
         private IInputContext _input;
-        private IKeyboard _keyboard;
+        private IKeyboard _keyboard = default!;
         private IMouse _mouse;
         private Vector2 _lastMousePosition;
 

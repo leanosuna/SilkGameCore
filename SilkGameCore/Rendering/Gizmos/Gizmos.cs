@@ -242,5 +242,13 @@ namespace SilkGameCore.Rendering.Gizmos
                 AddLine(corners[_frustumEdges[i, 0]], corners[_frustumEdges[i, 1]], color, hit);
             }
         }
+
+        public void AddAxisLines(int length)
+        {
+            AddLine(Vector3.Zero, Vector3.UnitX * length, Vector3.UnitX);
+            AddLine(Vector3.Zero, Vector3.UnitY * length, Vector3.UnitY);
+            AddLine(Vector3.Zero, Vector3.UnitZ * length, Vector3.UnitZ);
+
+        }
     }
 }

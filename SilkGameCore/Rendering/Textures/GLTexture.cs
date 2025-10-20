@@ -1,4 +1,3 @@
-using Silk.NET.Assimp;
 using Silk.NET.OpenGL;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
@@ -10,16 +9,14 @@ namespace SilkGameCore.Rendering.Textures
         private uint _handle;
         private GL GL;
 
-        public string Path { get; set; }
-        public TextureType Type { get; }
+        public string Path { get; set; } = default!;
 
         public int Width, Height;
 
-        public unsafe GLTexture(GL gl, string path, TextureType type = TextureType.None)
+        public unsafe GLTexture(GL gl, string path)
         {
             GL = gl;
             Path = path;
-            Type = type;
             _handle = GL.GenTexture();
             Bind();
 
@@ -42,7 +39,17 @@ namespace SilkGameCore.Rendering.Textures
 
             SetParameters();
         }
+        public unsafe GLTexture(GL gl, void* data, uint width, uint height)
+        {
+            GL = gl;
 
+            _handle = GL.GenTexture();
+            Bind();
+
+            GL.TexImage2D(TextureTarget.Texture2D, 0, (int)InternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, data);
+            SetParameters();
+
+        }
         public unsafe GLTexture(GL gl, Span<byte> data, uint width, uint height)
         {
             GL = gl;
