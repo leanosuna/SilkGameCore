@@ -12,9 +12,13 @@ namespace SilkGameCore.Rendering.Animation
         Dictionary<string, Animation> _animationMap = new Dictionary<string, Animation>();
         public Matrix4x4 InverseGlobalTransform { get; set; } = default!;
 
+        private int _boneCount;
+        private Matrix4x4[] _blendedTransform;
         public Animator(AnimatedModel model)
         {
             _animModel = model;
+            _boneCount = model.GetBaseModel().BoneInfoMap.Count;
+            _blendedTransform = new Matrix4x4[_boneCount];
             FinalBoneMatrices = new Matrix4x4[Vertex.MAX_BONE_COUNT];
 
             for (int i = 0; i < Vertex.MAX_BONE_COUNT; i++)
@@ -54,32 +58,58 @@ namespace SilkGameCore.Rendering.Animation
                 }
             }
         }
-
-        Vector3 SkinVertexCPU(Vertex v)
+        public void BlendBetween(string a1, string a2, float ammount, float deltaTime)
         {
-            var pos = v.Position;
-            int[] boneIDs = [(int)v.BoneIds.X, (int)v.BoneIds.Y, (int)v.BoneIds.Z, (int)v.BoneIds.W];
-            float[] weights = [v.Weights.X, v.Weights.Y, v.Weights.Z, v.Weights.W];
-            //Vector3 skinned = Vector3.Zero;
-            Matrix4x4 boneTransform = new Matrix4x4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-            for (int i = 0; i < boneIDs.Length; i++)
-            {
-                var boneID = boneIDs[i];
-                //if (boneID >= 0)
-                //{ 
-                //    var m = FinalBoneMatrices[boneID];
-                //    var transformed = Vector3.Transform(pos, m); // beware your row/column convention here
-                //    skinned += transformed * weights[i];
-                //}
+            if (!_animationMap.TryGetValue(a1, out var anim1))
+                return;
+            if (!_animationMap.TryGetValue(a2, out var anim2))
+                return;
 
-                if (boneID >= 0)
-                    boneTransform += FinalBoneMatrices[boneID] * weights[i];
-
-            }
-            return Vector3.Transform(pos, boneTransform);
-            //return skinned;
+            BlendBetween(anim1, anim2, ammount, deltaTime);
         }
 
+        public void BlendBetween(Animation a1, Animation a2, float ammount, float deltaTime)
+        {
+            a1.UpdateFrameSRT(deltaTime);
+            a2.UpdateFrameSRT(deltaTime);
+
+            for (var i = 0; i < _boneCount; i++)
+            {
+                var blend = a1.CurrentFrame[i].Interpolate(a2.CurrentFrame[i], ammount);
+                _blendedTransform[i] = blend.AsMatrix();
+            }
+
+
+            var nodes = _animModel.AnimatorNodes;
+            for (var i = 0; i < nodes.Length; i++)
+            {
+                var node = nodes[i];
+
+                var pid = node.ParentID;
+                var parentTransform = pid != -1 ? nodes[pid].Transform : Matrix4x4.Identity;
+
+                Matrix4x4 localTransform;
+                if (node.IsBone)
+                {
+                    var animTransform = _blendedTransform[node.ModelBoneID];
+
+                    animTransform.Transpose();
+
+                    localTransform = animTransform;
+                }
+                else
+                    localTransform = node.BindTransform;
+
+                node.Transform = parentTransform * localTransform;
+
+                if (node.IsBone)
+                {
+                    var final = InverseGlobalTransform * node.Transform * node.Offset;
+                    final.Transpose();
+                    FinalBoneMatrices[node.ModelBoneID] = final;
+                }
+            }
+        }
         public void AddAnimation(Animation animation)
         {
             if (!_animationMap.TryAdd(animation.Name, animation))

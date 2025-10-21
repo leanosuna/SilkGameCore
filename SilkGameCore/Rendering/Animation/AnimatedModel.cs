@@ -12,7 +12,7 @@ namespace SilkGameCore.Rendering.Animation
         private Model _model;
         private Assimp _assimp;
 
-        private Animator _animator;
+        public Animator Animator { get; private set; }
         private bool _modelHierarchySet = false;
         private List<AnimatorNode> _animatorNodes = new List<AnimatorNode>();
         public AnimatedModel(GL gl, string modelPath, string animationsPath, string[] animationNames)
@@ -33,23 +33,23 @@ namespace SilkGameCore.Rendering.Animation
             );
 
             Parts = _model.Parts;
-            _animator = new Animator(this);
+            Animator = new Animator(this);
             foreach (var animName in animationNames)
             {
                 var animation = LoadAnimation(animationsPath, animName);
-                _animator.AddAnimation(animation);
+                Animator.AddAnimation(animation);
 
             }
-            _animator.SelectAnimation(animationNames[0]);
+            Animator.SelectAnimation(animationNames[0]);
 
         }
         public Matrix4x4[] GetAnimationBoneMatrices()
         {
-            return _animator.FinalBoneMatrices;
+            return Animator.FinalBoneMatrices;
         }
         public void SelectAnimation(string name)
         {
-            _animator.SelectAnimation(name);
+            Animator.SelectAnimation(name);
         }
         public void Draw()
         {
@@ -57,14 +57,22 @@ namespace SilkGameCore.Rendering.Animation
         }
         public void Update(float deltaTime)
         {
-            _animator.Update(deltaTime);
+            Animator.Update(deltaTime);
+        }
+
+        public void Blend(string a1, string a2, float ammount, float deltaTime)
+        {
+            Animator.BlendBetween(a1, a2, ammount, deltaTime);
         }
         public void Dispose()
         {
             _model.Dispose();
         }
 
-
+        public Model GetBaseModel()
+        {
+            return _model;
+        }
 
         private unsafe Animation LoadAnimation(string path, string name)
         {
@@ -81,7 +89,7 @@ namespace SilkGameCore.Rendering.Animation
             if (!_modelHierarchySet)
             {
                 var globalTransform = Matrix4x4.Transpose(rootNode->MTransformation);
-                _animator.InverseGlobalTransform = Matrix4x4.Invert(globalTransform, out var inverse) ? inverse : Matrix4x4.Identity;
+                Animator.InverseGlobalTransform = Matrix4x4.Invert(globalTransform, out var inverse) ? inverse : Matrix4x4.Identity;
 
                 //Log.Debug("-------------");
                 //Log.Debug("HIERACHY");

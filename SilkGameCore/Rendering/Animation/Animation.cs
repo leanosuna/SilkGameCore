@@ -9,9 +9,11 @@ namespace SilkGameCore.Rendering.Animation
         public float Duration { get; private set; }
         public float TicksPerSecond { get; private set; }
         public float CurrentTime { get; private set; }
+        public Transform[] CurrentFrame { get; private set; }
         public Matrix4x4[] Transforms { get; private set; }
 
         private Keyframe[][] _keyframes;
+
 
         private int _boneCount;
 
@@ -24,7 +26,12 @@ namespace SilkGameCore.Rendering.Animation
             if (TicksPerSecond <= 0)
                 TicksPerSecond = 25.0f;
 
+            CurrentFrame = new Transform[model.BoneInfoMap.Count];
 
+            for (int i = 0; i < CurrentFrame.Length; i++)
+            {
+                CurrentFrame[i] = new Transform(Vector3.One, Quaternion.Identity, Vector3.Zero);
+            }
             _keyframes = ReadKeyFrames(assAnimation, model);
 
             _boneCount = _keyframes.GetLength(0);
@@ -65,7 +72,7 @@ namespace SilkGameCore.Rendering.Animation
                     var rot = (k < channel->MNumRotationKeys) ? channel->MRotationKeys[k].MValue : channel->MRotationKeys[channel->MNumRotationKeys - 1].MValue;
                     var scl = (k < channel->MNumScalingKeys) ? channel->MScalingKeys[k].MValue : channel->MScalingKeys[channel->MNumScalingKeys - 1].MValue;
 
-                    keyframes[info.ID].Add(new Keyframe((float)t, pos, rot, scl));
+                    keyframes[info.ID].Add(new Keyframe((float)t, scl, rot, pos));
                 }
             }
 
@@ -78,7 +85,8 @@ namespace SilkGameCore.Rendering.Animation
         {
             CurrentTime = 0.0f;
         }
-        public void Update(float deltaTime)
+
+        public Transform[] UpdateFrameSRT(float deltaTime)
         {
             CurrentTime += TicksPerSecond * deltaTime;
             CurrentTime %= Duration;
@@ -95,15 +103,25 @@ namespace SilkGameCore.Rendering.Animation
                 var i0 = GetStartingIndex(CurrentTime, keys);
                 var i1 = Math.Min(i0 + 1, keys.Length - 1);
 
-                var (s, r, p) = Interpolate(keys[i0], keys[i1], CurrentTime);
+                CurrentFrame[b] = Interpolate(keys[i0], keys[i1], CurrentTime);
+            }
 
-                var M = Matrix4x4.CreateScale(s)
-                      * Matrix4x4.CreateFromQuaternion(r)
-                      * Matrix4x4.CreateTranslation(p);
+            return CurrentFrame;
+        }
+        public void Update(float deltaTime)
+        {
+            UpdateFrameSRT(deltaTime);
+
+            for (int b = 0; b < _boneCount; b++)
+            {
+                var M = Matrix4x4.CreateScale(CurrentFrame[b].Scale)
+                       * Matrix4x4.CreateFromQuaternion(CurrentFrame[b].Rotation)
+                       * Matrix4x4.CreateTranslation(CurrentFrame[b].Translation);
 
                 Transforms[b] = M;
             }
         }
+
         private int GetStartingIndex(float time, Keyframe[] keys)
         {
             if (keys.Length == 0) return 0;
@@ -115,35 +133,17 @@ namespace SilkGameCore.Rendering.Animation
             return Math.Max(0, keys.Length - 2);
         }
 
-        private (Vector3 scale, Quaternion rotation, Vector3 position)
-            Interpolate(Keyframe current, Keyframe next, float time)
+        private Transform Interpolate(Keyframe current, Keyframe next, float time)
         {
             var lerpFactor = 0.0f;
             var midWayLength = time - current.TimeStamp;
             var framesDiff = next.TimeStamp - current.TimeStamp;
             lerpFactor = midWayLength / framesDiff;
 
-            var scale = Vector3.Lerp(current.Scale, next.Scale, lerpFactor);
-            var rotation = Quaternion.Slerp(current.Rotation, next.Rotation, lerpFactor);
-            var position = Vector3.Lerp(current.Position, next.Position, lerpFactor);
-            return (scale, rotation, position);
-        }
-
-    }
-
-    public class Keyframe
-    {
-        public float TimeStamp { get; }
-        public Vector3 Position { get; }
-        public Quaternion Rotation { get; private set; }
-        public Vector3 Scale { get; }
-
-        public Keyframe(float timeStamp, Vector3 position, Quaternion rotation, Vector3 scale)
-        {
-            TimeStamp = timeStamp;
-            Position = position;
-            Rotation = rotation;
-            Scale = scale;
+            return current.Interpolate(next, lerpFactor);
         }
     }
+
+
+
 }

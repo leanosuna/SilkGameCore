@@ -72,7 +72,22 @@ namespace SilkGameCore
         /// </summary>
         public void Run()
         {
-            Window.Run();
+            try
+            {
+                Window.Run();
+            }
+            catch (Exception ex)
+            {
+                Log.Verbose = true;
+                Log.Date = true;
+                Log.Time = true;
+                var strException = ex.Message;
+                if (ex.StackTrace != null)
+                    strException += $"\n{ex.StackTrace}";
+                Log.Exception(strException);
+
+                throw;
+            }
             //thread blocked here until the window is closed.
             Window.Dispose();
         }

@@ -11,7 +11,9 @@ A framework for creating 3D games, built using Silk.NET and OpenGL
 - [x] Camera system
 - [x] 3D models
 	- [x] Assimp loader abstraction
-	- [x] Model, Parts, Meshes hierarchy  
+	- [x] Model, Parts, Meshes hierarchy 
+    - [x] Bone Animation
+    - [x] Animation blending 
 	- [ ] Embedded textures
 - [x] Texture manager 
 	- [x] Handles texture loading
