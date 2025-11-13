@@ -1,4 +1,4 @@
-﻿namespace SilkGameCore.Rendering
+﻿namespace SilkGameCore.Rendering.Geometry
 {
     public class ModelPart : IDisposable
     {

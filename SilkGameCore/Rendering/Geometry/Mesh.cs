@@ -2,7 +2,7 @@ using Silk.NET.OpenGL;
 using SilkGameCore.Rendering.Textures;
 using System.Numerics;
 
-namespace SilkGameCore.Rendering
+namespace SilkGameCore.Rendering.Geometry
 {
     public class Mesh : IDisposable
     {
@@ -35,18 +35,17 @@ namespace SilkGameCore.Rendering
             IndicesLength = (uint)indices.Length;
 
 
-            var attdata = CalculateAttributeData();
-            (var data, var totalBytes) = PushData(vertices, attdata.strideBytes, attdata.layout);
-
             _VAHandle = GL.GenVertexArray();
             GL.BindVertexArray(_VAHandle);
 
             _VBhandle = GL.GenBuffer();
             GL.BindBuffer(BufferTargetARB.ArrayBuffer, _VBhandle);
 
+            var attdata = CalculateAttributeData();
+            (var data, var totalBytes) = PushData(vertices, attdata.strideBytes, attdata.layout);
             fixed (byte* p = data)
             {
-                GL.BufferData(BufferTargetARB.ArrayBuffer, (nuint)totalBytes, (void*)p, BufferUsageARB.StaticDraw);
+                GL.BufferData(BufferTargetARB.ArrayBuffer, (nuint)totalBytes, p, BufferUsageARB.StaticDraw);
             }
 
             EBO = new BufferObject<uint>(GL, indices, BufferTargetARB.ElementArrayBuffer);

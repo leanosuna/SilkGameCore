@@ -48,5 +48,34 @@ namespace SilkGameCore.Rendering
             return (1 - amount) * start + amount * end;
 
         }
+
+
+        public static float[] ToFloatArray(this Vector2 vector)
+        {
+            return [vector.X, vector.Y];
+        }
+        public static float[] ToFloatArray(this Vector3 vector)
+        {
+            return [vector.X, vector.Y, vector.Z];
+        }
+        public static float[] ToFloatArray(this Matrix4x4 mx)
+        {
+            return [mx.M11, mx.M12, mx.M13, mx.M14, mx.M21, mx.M22, mx.M23, mx.M24, mx.M31, mx.M32, mx.M33, mx.M34, mx.M41, mx.M42, mx.M43, mx.M44];
+        }
+
+        public static List<float[]> ToFloatArrayList(this List<Vector3> vectors)
+        {
+            var fs = new List<float[]>();
+
+            foreach (var v in vectors)
+            {
+                float[] floats = [v.X, v.Y, v.Z];
+
+                fs.Add(floats);
+            }
+
+
+            return fs;
+        }
     }
 }
