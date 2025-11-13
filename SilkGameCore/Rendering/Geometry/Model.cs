@@ -5,7 +5,7 @@ using SilkGameCore.Rendering.Textures;
 using System.Numerics;
 using AssimpMesh = Silk.NET.Assimp.Mesh;
 using AssimpPPS = Silk.NET.Assimp.PostProcessSteps;
-namespace SilkGameCore.Rendering
+namespace SilkGameCore.Rendering.Geometry
 {
     public class Model : IDisposable
     {

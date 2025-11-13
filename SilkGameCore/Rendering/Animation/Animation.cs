@@ -1,4 +1,5 @@
 ﻿using Silk.NET.Assimp;
+using SilkGameCore.Rendering.Geometry;
 using System.Numerics;
 
 namespace SilkGameCore.Rendering.Animation

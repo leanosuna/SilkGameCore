@@ -23,9 +23,9 @@ namespace SilkGameCore.Rendering.Gizmos
         private GGCylinder _cylinderGeometry;
         private GGSphere _sphereGeometry;
         private GGPlane _planeGeometry;
-        internal Gizmos(GL gl)
+        internal Gizmos(SilkGameGL game)
         {
-            GL = gl;
+            GL = game.GL;
             _shader = new GLShader(GL,
                 EmbeddedHelper.ExtractPath("gizmos.vert", "Files.Shaders.gizmos"),
                 EmbeddedHelper.ExtractPath("gizmos.frag", "Files.Shaders.gizmos"));

@@ -126,11 +126,11 @@ namespace SilkGameCore
 
         private void InternalLoad()
         {
+            Log.Enabled = true;
             Log.Info("Game starting");
             Window.Center();
             GL = GL.GetApi(Window);
-            //DelayedLoad();
-
+            
             InputManager = new InputManager(this);
             GUIManager = new GUIManager(this);
 
@@ -140,7 +140,7 @@ namespace SilkGameCore
             FullScreenQuad = new FullScreenQuad(this);
             TextureManager = new TextureManager(this);
             RTManager = new RTManager(this);
-            Gizmos = new Gizmos(GL);
+            Gizmos = new Gizmos(this);
             SoundManager = new SoundManager();
             //NetworkManager = new NetworkManager(this);
             Initialize();
@@ -211,6 +211,14 @@ namespace SilkGameCore
         {
             OnClose();
         }
+
+        //public static void CheckGLError(string label)
+        //{
+        //    var err = GL.GetError();
+        //    if (err != GLEnum.NoError)
+        //        Log.Error($"[GL ERROR] {label}: {err}");
+        //    //throw new Exception();
+        //}
 
     }
 }
