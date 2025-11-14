@@ -3,46 +3,78 @@ using System.Numerics;
 
 namespace SilkGameCore.Cameras
 {
-    public class FreeCamera : MoveCamera
+    public class FreeCamera : MouseCamera
     {
-        public FreeCamera(SilkGameGL game, Vector3 position, float yaw, float pitch, float fov, float nearPlane, float farPlane, float aspectRatio)
+        Key _forward = default!;
+        Key _backward = default!;
+        Key _left = default!;
+        Key _right = default!;
+        Key _up = default!;
+        Key _down = default!;
+        Key _speedModifierKey = default!;
+        float _speedModifier = default!;
+        bool _moveKeysSet = false;
+
+        Key _pitchUp = default!;
+        Key _pitchDown = default!;
+        Key _yawLeft = default!;
+        Key _yawRight = default!;
+        Vector2 _turnSpeed = Vector2.Zero;
+        bool _pitchYawKeysSet = false;
+        public FreeCamera(SilkGameGL game, Vector3 position, float yaw, float pitch, float fov, float nearPlane, 
+            float farPlane, float aspectRatio)
             : base(game, position, yaw, pitch, fov, nearPlane, farPlane, aspectRatio)
         {
 
         }
 
-
         public override void Update(double deltaTime)
         {
             base.Update(deltaTime);
 
-            var updateView = false;
+            var viewChanged = HandleMoveKeys(deltaTime);
+            var vectorsChanged = HandlePitchYawKeys(deltaTime);
+            
+            if (vectorsChanged)
+                CalculateVectors();
+
+            if (viewChanged || vectorsChanged)
+                CalculateView();
+        }
+        public void SetMoveKeys(Key forward, Key backward, Key left, Key right, Key up, Key down, Key speedModifierKey, float speedModifier)
+        {
+            _forward = forward;
+            _backward = backward;
+            _left = left;
+            _right = right;
+            _up = up;
+            _down = down;
+            _speedModifierKey = speedModifierKey;
+            _speedModifier = speedModifier;
+            _moveKeysSet = true;
+        }
+        public void SetPitchYawKeys(Key pitchUp, Key pitchDown, Key yawLeft, Key yawRight, Vector2 turnSpeed)
+        {
+            _pitchUp = pitchUp;
+            _pitchDown = pitchDown;
+            _yawLeft = yawLeft;
+            _yawRight = yawRight;
+            _turnSpeed = turnSpeed;
+            _pitchYawKeysSet = true;
+        }
+        private bool HandleMoveKeys(double deltaTime)
+        {
+            if (!_moveKeysSet)
+                return false;
 
             var dir = Vector3.Zero;
-            if (_game.InputManager.KeyDown(Key.W))
-            {
-                dir += Front;
-            }
-            if (_game.InputManager.KeyDown(Key.S))
-            {
-                dir -= Front;
-            }
-            if (_game.InputManager.KeyDown(Key.A))
-            {
-                dir -= Right;
-            }
-            if (_game.InputManager.KeyDown(Key.D))
-            {
-                dir += Right;
-            }
-            if (_game.InputManager.KeyDown(Key.Space))
-            {
-                dir += Up;
-            }
-            if (_game.InputManager.KeyDown(Key.ControlLeft))
-            {
-                dir -= Up;
-            }
+
+            dir += Front * (_game.InputManager.KeyDown(_forward) ? 1 : 0);
+            dir -= Front * (_game.InputManager.KeyDown(_backward) ? 1 : 0);
+            dir -= Right * (_game.InputManager.KeyDown(_left) ? 1 : 0);
+            dir += Right * (_game.InputManager.KeyDown(_right) ? 1 : 0);
+            dir += Up * (_game.InputManager.KeyDown(_up) ? 1 : 0);
+            dir -= Up * (_game.InputManager.KeyDown(_down) ? 1 : 0);
 
             if (dir != Vector3.Zero)
             {
@@ -50,47 +82,44 @@ namespace SilkGameCore.Cameras
 
                 var speed = MoveSpeed;
 
-                if (_game.InputManager.KeyDown(Key.ShiftLeft))
-                    speed *= 5f;
+                if (_game.InputManager.KeyDown(_speedModifierKey))
+                    speed *= _speedModifier;
                 Position += dir * speed * (float)deltaTime;
 
-
-                updateView = true;
+                return true;
             }
-            var updateCameraVectors = false;
-            if (_game.InputManager.KeyDown(Key.Up))
-            {
-                Pitch += (float)deltaTime;
-                updateView = true;
-                updateCameraVectors = true;
-            }
-            if (_game.InputManager.KeyDown(Key.Down))
-            {
-                Pitch -= (float)deltaTime;
-                updateView = true;
-                updateCameraVectors = true;
-            }
-            if (_game.InputManager.KeyDown(Key.Right))
-            {
-                Yaw += (float)deltaTime;
-                updateView = true;
-                updateCameraVectors = true;
-            }
-            if (_game.InputManager.KeyDown(Key.Left))
-            {
-                Yaw -= (float)deltaTime;
-                updateView = true;
-                updateCameraVectors = true;
-            }
-
-
-            if (updateCameraVectors)
-                CalculateVectors();
-
-            if (updateView)
-                CalculateView();
+            return false;
         }
 
+        private bool HandlePitchYawKeys(double deltaTime)
+        {
+            if (!_pitchYawKeysSet)
+                return false;
+            bool res = false;
+
+            if (_game.InputManager.KeyDown(_pitchUp))
+            {
+                Pitch += _turnSpeed.Y * (float)deltaTime;
+                res = true;
+            }
+            if (_game.InputManager.KeyDown(_pitchDown))
+            {
+                Pitch -= _turnSpeed.Y * (float)deltaTime;
+                res = true;
+            }
+            if (_game.InputManager.KeyDown(_yawRight))
+            {
+                Yaw += _turnSpeed.X * (float)deltaTime;
+                res = true;
+            }
+            if (_game.InputManager.KeyDown(_yawLeft))
+            {
+                Yaw -= _turnSpeed.X * (float)deltaTime;
+                res = true;
+            }
+
+            return res;
+        }
 
 
     }

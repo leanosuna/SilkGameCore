@@ -6,7 +6,7 @@ namespace SilkGameCore.Rendering
 {
     public class GLShader : IDisposable
     {
-        private uint handle;
+        private uint _handle;
         private GL GL;
         private bool ignoreUniformsNotFound;
 
@@ -25,25 +25,36 @@ namespace SilkGameCore.Rendering
             uint vertex = LoadShader(ShaderType.VertexShader, vertexPath);
             uint fragment = LoadShader(ShaderType.FragmentShader, fragmentPath);
 
-            handle = GL.CreateProgram();
-            GL.AttachShader(handle, vertex);
-            GL.AttachShader(handle, fragment);
-            GL.LinkProgram(handle);
-            GL.GetProgram(handle, GLEnum.LinkStatus, out var status);
+            _handle = GL.CreateProgram();
+            GL.AttachShader(_handle, vertex);
+            GL.AttachShader(_handle, fragment);
+            GL.LinkProgram(_handle);
+            GL.GetProgram(_handle, GLEnum.LinkStatus, out var status);
             if (status == 0)
             {
-                throw new Exception($"Program failed to link with error: {GL.GetProgramInfoLog(handle)}");
+                throw new Exception($"Program failed to link with error: {GL.GetProgramInfoLog(_handle)}");
             }
-            GL.DetachShader(handle, vertex);
-            GL.DetachShader(handle, fragment);
+
+            GL.DetachShader(_handle, vertex);
+            GL.DetachShader(_handle, fragment);
             GL.DeleteShader(vertex);
             GL.DeleteShader(fragment);
             this.ignoreUniformsNotFound = ignoreUniformsNotFound;
         }
+        public void AttachUBO(uint bufferHandle, string uniformBlockName, uint binding = 0)
+        {
+            var index = GL.GetUniformBlockIndex(_handle, uniformBlockName);
+            if(index == uint.MaxValue)
+            {
+                throw new Exception($"Uniform block {uniformBlockName} not found");
+            }    
+            GL.UniformBlockBinding(_handle, index, binding);
 
+            GL.BindBufferBase(BufferTargetARB.UniformBuffer, binding, bufferHandle);
+        }
         public void SetAsCurrentGLProgram()
         {
-            GL.UseProgram(handle);
+            GL.UseProgram(_handle);
         }
 
 
@@ -52,7 +63,7 @@ namespace SilkGameCore.Rendering
             if (uniformLocations.TryGetValue(name, out int location))
                 return location;
 
-            location = GL.GetUniformLocation(handle, name);
+            location = GL.GetUniformLocation(_handle, name);
 
             if (location != -1)
                 uniformLocations.Add(name, location);
@@ -129,7 +140,7 @@ namespace SilkGameCore.Rendering
 
         public void Dispose()
         {
-            GL.DeleteProgram(handle);
+            GL.DeleteProgram(_handle);
         }
         //Experimental automatic version insert
         //private string ApiVersionInsert()

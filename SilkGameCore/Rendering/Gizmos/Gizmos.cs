@@ -12,6 +12,7 @@ namespace SilkGameCore.Rendering.Gizmos
     public class Gizmos
     {
         GL GL;
+        SilkGameGL game;
         public bool Enabled { get; set; } = true;
         GLShader _shader;
         List<GizmoGeometryInstance> _drawList = new();
@@ -25,10 +26,13 @@ namespace SilkGameCore.Rendering.Gizmos
         private GGPlane _planeGeometry;
         internal Gizmos(SilkGameGL game)
         {
+            this.game = game;
             GL = game.GL;
             _shader = new GLShader(GL,
                 EmbeddedHelper.ExtractPath("gizmos.vert", "Files.Shaders.gizmos"),
                 EmbeddedHelper.ExtractPath("gizmos.frag", "Files.Shaders.gizmos"));
+            _shader.AttachUBO(game.CommonUboHandle, "CommonData");
+
             _cubeGeometry = new GGCube(GL);
             _lineGeometry = new GGLineSegment(GL);
             _sphereGeometry = new GGSphere(GL);
@@ -40,11 +44,11 @@ namespace SilkGameCore.Rendering.Gizmos
         /// </summary>
         /// <param name="view">The current camera view to apply </param>
         /// <param name="projection">The current camera projection to apply </param>
-        public void Update(Matrix4x4 view, Matrix4x4 projection)
+        public void Update()
         {
             _drawList.Clear();
-            _view = view;
-            _proj = projection;
+            //_view = view;
+            //_proj = projection;
         }
         /// <summary>
         /// Draws the gizmos added to the drawlist this frame with the internal shader
@@ -54,7 +58,7 @@ namespace SilkGameCore.Rendering.Gizmos
             if (!Enabled)
                 return;
 
-            if (_view == Matrix4x4.Identity || _proj == Matrix4x4.Identity)
+            if (game.Camera.View == Matrix4x4.Identity || game.Camera.Projection == Matrix4x4.Identity)
                 return;
 
             _shader.SetAsCurrentGLProgram();
@@ -63,8 +67,8 @@ namespace SilkGameCore.Rendering.Gizmos
                 _shader.SetUniform("uWorld", gizmoInstance.World);
                 _shader.SetUniform("uColor", gizmoInstance.Color);
                 _shader.SetUniform("uHit", gizmoInstance.Hit);
-                _shader.SetUniform("uView", _view);
-                _shader.SetUniform("uProjection", _proj);
+                //_shader.SetUniform("uView", game.Camera.View);
+                //_shader.SetUniform("uProjection", game.Camera.Projection);
 
                 gizmoInstance.Geometry.Draw();
             }

@@ -1,6 +1,7 @@
 ﻿using Silk.NET.Maths;
 using Silk.NET.OpenGL;
 using Silk.NET.Windowing;
+using SilkGameCore.Cameras;
 using SilkGameCore.Input;
 using SilkGameCore.Network;
 using SilkGameCore.Rendering;
@@ -26,14 +27,20 @@ namespace SilkGameCore
         public GUIManager GUIManager { get; private set; } = default!;
         public SoundManager SoundManager { get; private set; } = default!;
         public NetworkManager NetworkManager { get; private set; } = default!;
-
+        public Camera Camera { get; set; } = default!;
         public double Time { get; private set; } = 0;
         public double FrameTime { get; private set; } = 0;
+        public double FT_SAMPLE { get; private set; } = 0;
+        public double FT_SAMPLE_RATE { get; set; } = 0.3;
         public double FPS { get; private set; } = 0;
         public double FPS_SAMPLE { get; private set; } = 0;
         public double FPS_SAMPLE_RATE { get; set; } = 0.3;
 
+        public bool CommonUboEnabled { get; set; } = false;
+        public uint CommonUboHandle { get; private set; } = 0;
+        private CommonUBO _commonUboData;
         private bool _delayedLoadDone = false;
+
         public SilkGameGL()
         {
             var options = WindowOptions.Default;
@@ -78,6 +85,7 @@ namespace SilkGameCore
             }
             catch (Exception ex)
             {
+                Log.Enabled = true;
                 Log.Verbose = true;
                 Log.Date = true;
                 Log.Time = true;
@@ -134,8 +142,18 @@ namespace SilkGameCore
             InputManager = new InputManager(this);
             GUIManager = new GUIManager(this);
 
+            GenCommonUBO();
+
         }
-        void DelayedLoad()
+        private unsafe void GenCommonUBO()
+        {
+            CommonUboHandle = GL.GenBuffer();
+            GL.BindBuffer(BufferTargetARB.UniformBuffer, CommonUboHandle);
+            GL.BufferData(BufferTargetARB.UniformBuffer, (nuint)(sizeof(CommonUBO)), null, BufferUsageARB.DynamicDraw);
+            GL.BindBufferBase(BufferTargetARB.UniformBuffer, 0, CommonUboHandle);
+        }
+
+        private void DelayedLoad()
         {
             FullScreenQuad = new FullScreenQuad(this);
             TextureManager = new TextureManager(this);
@@ -143,6 +161,8 @@ namespace SilkGameCore
             Gizmos = new Gizmos(this);
             SoundManager = new SoundManager();
             //NetworkManager = new NetworkManager(this);
+
+            // User defined Initialize
             Initialize();
             _delayedLoadDone = true;
         }
@@ -158,11 +178,31 @@ namespace SilkGameCore
                 _firstFrame = false;
                 return;
             }
+            Time += deltaTime;
 
             InputManager.Update();
 
             //NetworkManager.Update();
+
+            // User defined Update
             Update(deltaTime);
+
+            if(CommonUboEnabled)
+                UpdateCommonUBO(deltaTime);
+
+            if(Gizmos.Enabled)
+                Gizmos.Update();
+
+        }
+
+        private unsafe void UpdateCommonUBO(double dt)
+        {
+            _commonUboData = new CommonUBO(Camera.View, Camera.Projection, (float)Time, (float)dt);
+            GL.BindBuffer(GLEnum.UniformBuffer, CommonUboHandle);
+            fixed (void* d = & _commonUboData)
+            {
+                GL.BufferSubData(GLEnum.UniformBuffer, 0, (nuint)sizeof(CommonUBO), d);
+            }
         }
 
         /// <summary>
@@ -178,17 +218,26 @@ namespace SilkGameCore
                 new Vector2(WindowSize.X / 2, WindowSize.Y / 2), Vector4.One, 30);
             GUIManager.Render();
         }
-        double _timeAcc = 0;
+        double _timerSamplerFPS = 0;
+        double _timerSamplerFT = 0;
+
         private void InternalRender(double deltaTime)
         {
             FrameTime = deltaTime;
-            Time += deltaTime;
+            
             FPS = 1.0 / deltaTime;
-            _timeAcc += deltaTime;
-            if (_timeAcc >= FPS_SAMPLE_RATE)
+            _timerSamplerFPS += deltaTime;
+            _timerSamplerFT += deltaTime;
+
+            if (_timerSamplerFPS >= FPS_SAMPLE_RATE)
             {
                 FPS_SAMPLE = FPS;
-                _timeAcc = 0;
+                _timerSamplerFPS = 0;
+            }
+            if (_timerSamplerFT >= FT_SAMPLE_RATE)
+            {
+                FT_SAMPLE = FrameTime;
+                _timerSamplerFT = 0;
             }
 
             if (!_delayedLoadDone)
@@ -198,7 +247,8 @@ namespace SilkGameCore
             }
             GUIManager.Update(deltaTime);
             Render(deltaTime);
-
+            if (Gizmos.Enabled)
+                Gizmos.Render();
             GUIManager.Render();
         }
         private void InternalFramebufferResize(Vector2D<int> size)
