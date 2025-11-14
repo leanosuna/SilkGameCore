@@ -3,13 +3,13 @@ using System.Numerics;
 
 namespace SilkGameCore.Cameras
 {
-    public abstract class MoveCamera : Camera
+    public abstract class MouseCamera : BaseCamera
     {
         public float MoveSpeed = 10f;
         public bool MouseAim = true;
         internal SilkGameGL _game;
 
-        public MoveCamera(SilkGameGL game, Vector3 position, float yaw, float pitch, float fov, float nearPlane, float farPlane, float aspectRatio)
+        public MouseCamera(SilkGameGL game, Vector3 position, float yaw, float pitch, float fov, float nearPlane, float farPlane, float aspectRatio)
            : base(position, yaw, pitch, fov, nearPlane, farPlane, aspectRatio)
         {
             _game = game;
