@@ -1,9 +1,11 @@
-﻿using System.Numerics;
+﻿using System;
+using System.Numerics;
 
 namespace SilkGameCore.Rendering
 {
     public static class MathHelper
     {
+        public const float Pi = MathF.PI;
         public const float TwoPi = MathF.PI * 2.0f;
         public const float PiOver2 = MathF.PI / 2.0f;
         public const float PiOver4 = MathF.PI / 4.0f;
@@ -48,7 +50,23 @@ namespace SilkGameCore.Rendering
             return (1 - amount) * start + amount * end;
 
         }
-
+        public static float WrapAngle(float angle)
+        {
+            if ((angle > -Pi) && (angle <= Pi))
+            {
+                return angle;
+            }
+            angle %= TwoPi;
+            if (angle <= -Pi)
+            {
+                return angle + TwoPi;
+            }
+            if (angle > Pi)
+            {
+                return angle - TwoPi;
+            }
+            return angle;
+        }
 
         public static float[] ToFloatArray(this Vector2 vector)
         {
