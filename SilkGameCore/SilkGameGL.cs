@@ -259,6 +259,7 @@ namespace SilkGameCore
         }
         private void InternalOnClose()
         {
+            SoundManager.Dispose();
             OnClose();
         }
 
