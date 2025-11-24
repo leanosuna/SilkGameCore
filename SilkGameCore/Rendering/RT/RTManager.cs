@@ -46,12 +46,31 @@ namespace SilkGameCore.Rendering.RT
         /// <param name="name">The name of the render target</param>
         /// <param name="targetNames">Name of the color framebuffers</param>
         /// <param name="size">Size of the framebuffers</param>
-        public unsafe void CreateRenderTarget(string name, Vector2D<int> size, string[] targetNames)
+        public void CreateRenderTarget(string name, Vector2D<int> size, string[] targetNames)
+        {
+            InternalFormat[] formats = new InternalFormat[targetNames.Length];
+            for(var i = 0; i < targetNames.Length; i++)
+                formats[i] = InternalFormat.Rgba;
+                
+            CreateRenderTarget(name, size, targetNames, formats);
+        }
+
+        public void CreateRenderTarget(string name, string[] targetNames, InternalFormat[] formats)
+        {
+            CreateRenderTarget(name, _windowSize, targetNames, formats);
+        }
+
+        public unsafe void CreateRenderTarget(string name, Vector2D<int> size, string[] targetNames, InternalFormat[] formats)
         {
             var n = name.ToLower();
             if (_targets.TryGetValue(n, out var existingRt))
             {
                 throw new Exception($"Render target {n} already exists");
+            }
+
+            if(targetNames.Length != formats.Length)
+            {
+                throw new Exception("targets,formats missing pair(s)");
             }
 
             RenderTarget rt = new RenderTarget();
@@ -60,6 +79,7 @@ namespace SilkGameCore.Rendering.RT
             _targets[n] = rt;
             rt.ColorTargetCount = (uint)targetNames.Length;
 
+            
             GL.GenFramebuffers(1, out rt.FrameBuffer);
             GL.BindFramebuffer(FramebufferTarget.Framebuffer, rt.FrameBuffer);
 
@@ -71,13 +91,13 @@ namespace SilkGameCore.Rendering.RT
             {
                 // create color texture (RGBA8)
                 GL.GenTextures(1, out tcb);
-                buffers.Add(targetNames[i], tcb);
+                buffers.Add(targetNames[i].ToLower(), tcb);
 
                 GL.BindTexture(TextureTarget.Texture2D, tcb);
                 GL.TexImage2D(
                     TextureTarget.Texture2D,
                     0,
-                    (int)InternalFormat.Rgba8,
+                    (int)formats[i],
                     (uint)size.X,
                     (uint)size.Y,
                     0,
@@ -111,6 +131,8 @@ namespace SilkGameCore.Rendering.RT
             GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, 0);
 
         }
+
+
         /// <summary>
         /// Selects a render target as GL output 
         /// (passing in "screen" or "" selects the game window)
@@ -211,7 +233,7 @@ namespace SilkGameCore.Rendering.RT
             }
 
             GL.BindFramebuffer(FramebufferTarget.ReadFramebuffer, src.FrameBuffer);
-            GL.ReadBuffer(GLEnum.ColorAttachment0);
+            GL.ReadBuffer(readBuffer);
             GL.BindFramebuffer(FramebufferTarget.DrawFramebuffer, dest.FrameBuffer);
             GL.DrawBuffer(GLEnum.Front);
 
