@@ -81,45 +81,45 @@ namespace SilkGameCore.Rendering
             }
             switch (value)
             {
-                case bool b: GL.Uniform1(location, b ? 1 : 0); break;
-                case int i: GL.Uniform1(location, i); break;
-                case float f: GL.Uniform1(location, f); break;
-                case double d: GL.Uniform1(location, d); break;
-                case Vector2 v2: GL.Uniform2(location, v2); break;
-                case Vector3 v3: GL.Uniform3(location, v3); break;
-                case Vector4 v4: GL.Uniform4(location, v4); break;
+                case bool b: GL.ProgramUniform1(_handle, location, b ? 1 : 0); break;
+                case int i: GL.ProgramUniform1(_handle, location, i); break;
+                case float f: GL.ProgramUniform1(_handle, location, f); break;
+                case double d: GL.ProgramUniform1(_handle, location, d); break;
+                case Vector2 v2: GL.ProgramUniform2(_handle, location, v2); break;
+                case Vector3 v3: GL.ProgramUniform3(_handle, location, v3); break;
+                case Vector4 v4: GL.ProgramUniform4(_handle, location, v4); break;
 
                 case float[] fa:
                     fixed (float* ptr = fa)
                     {
-                        GL.Uniform1(location, (uint)fa.Length, ptr);
+                        GL.ProgramUniform1(_handle, location, (uint)fa.Length, ptr);
                     }
                     break;
                 case Vector2[] v2a:
                     fixed (Vector2* ptr = v2a)
                     {
-                        GL.Uniform2(location, (uint)v2a.Length, (float*)ptr);
+                        GL.ProgramUniform2(_handle, location, (uint)v2a.Length, (float*)ptr);
                     }
                     break;
                 case Vector3[] v3a:
                     fixed (Vector3* ptr = v3a)
                     {
-                        GL.Uniform3(location, (uint)v3a.Length, (float*)ptr);
+                        GL.ProgramUniform3(_handle, location, (uint)v3a.Length, (float*)ptr);
                     }
                     break;
                 case Vector4[] v4a:
                     fixed (Vector4* ptr = v4a)
                     {
-                        GL.Uniform4(location, (uint)v4a.Length, (float*)ptr);
+                        GL.ProgramUniform4(_handle, location, (uint)v4a.Length, (float*)ptr);
                     }
                     break;
 
                 case Matrix4x4 m:
-                    GL.UniformMatrix4(location, 1, false, (float*)&m); break;
+                    GL.ProgramUniformMatrix4(_handle, location, 1, false, (float*)&m); break;
                 case Matrix4x4[] mm:
                     fixed (Matrix4x4* ptr = mm)
                     {
-                        GL.UniformMatrix4(location, (uint)mm.Length, false, (float*)ptr);
+                        GL.ProgramUniformMatrix4(_handle, location, (uint)mm.Length, false, (float*)ptr);
                     }
                     break;
                 default: throw new Exception($"{typeof(T).Name} missing GL.UniformT entry");

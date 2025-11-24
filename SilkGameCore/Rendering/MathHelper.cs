@@ -9,7 +9,7 @@ namespace SilkGameCore.Rendering
         public const float TwoPi = MathF.PI * 2.0f;
         public const float PiOver2 = MathF.PI / 2.0f;
         public const float PiOver4 = MathF.PI / 4.0f;
-
+        
         public static Matrix4x4 RotationMxFromYawPitchRoll(float yaw, float pitch, float roll)
         {
             return Matrix4x4.CreateFromQuaternion(RotationFromYawPitchRoll(yaw, pitch, roll));
@@ -19,11 +19,20 @@ namespace SilkGameCore.Rendering
         {
             Matrix4x4.Invert(m, out m);
         }
+
+        public static void InverseTranspose(this ref Matrix4x4 m)
+        {
+            m.Transpose();
+            m.Invert();
+        }
         public static void Transpose(this ref Matrix4x4 m)
         {
             m = Matrix4x4.Transpose(m);
         }
-
+        public static void Normalize(this ref Vector3 v)
+        {
+            v = Vector3.Normalize(v);
+        }
         public static Quaternion RotationFromYawPitchRoll(float yaw, float pitch, float roll)
         {
             return Quaternion.CreateFromAxisAngle(Vector3.UnitY, yaw) *
