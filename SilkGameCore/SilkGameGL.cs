@@ -213,9 +213,7 @@ namespace SilkGameCore
         {
             var str = "Loading game assets...";
 
-            GUIManager.DrawCenteredText(str,
-                new Vector2(Window.Position.X, Window.Position.Y) +
-                new Vector2(WindowSize.X / 2, WindowSize.Y / 2), Vector4.One, 30);
+            GUIManager.DrawCenteredText(str,new Vector2(WindowSize.X / 2, WindowSize.Y / 2), Vector4.One, 30);
             GUIManager.Render();
         }
         double _timerSamplerFPS = 0;
