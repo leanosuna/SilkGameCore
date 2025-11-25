@@ -30,7 +30,7 @@ namespace SilkGameCore.Cameras
             CalculateView();
             CalculateProjection();
         }
-        internal void CalculateVectors()
+        protected void CalculateVectors()
         {
             tempFront.X = MathF.Cos(Yaw) * MathF.Cos(Pitch);
             tempFront.Y = MathF.Sin(Pitch);
@@ -44,11 +44,11 @@ namespace SilkGameCore.Cameras
 
             Right = Vector3.Normalize(Vector3.Cross(flatFront, Up));
         }
-        internal void CalculateView()
+        protected void CalculateView()
         {
             View = Matrix4x4.CreateLookAt(Position, Position + Front, Up);
         }
-        internal void CalculateProjection()
+        protected void CalculateProjection()
         {
             Projection = Matrix4x4.CreatePerspectiveFieldOfView(FOV, AspectRatio, NearPlane, FarPlane);
         }
