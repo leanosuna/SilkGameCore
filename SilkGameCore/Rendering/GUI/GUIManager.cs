@@ -110,7 +110,7 @@ namespace SilkGameCore.Rendering.GUI
             var drawList = ImGui.GetForegroundDrawList();
             var textSize = ImGui.CalcTextSize(text);
 
-            drawList.AddText(position - textSize, ImGui.ColorConvertFloat4ToU32(color), text);
+            drawList.AddText(position - textSize /2, ImGui.ColorConvertFloat4ToU32(color), text);
         }
 
 

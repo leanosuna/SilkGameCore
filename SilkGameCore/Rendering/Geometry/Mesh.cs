@@ -6,16 +6,24 @@ namespace SilkGameCore.Rendering.Geometry
 {
     public class Mesh : IDisposable
     {
-        public Mesh(GL gl, MeshAttributes attributes, List<Vertex> vertices, uint[] indices, List<GLTexture> textures)
+
+        public Mesh(GL gl, MeshAttributes attributes, List<Vertex> vertices, uint[] indices, List<GLTexture> textures, bool saveVerticesIndices = false)
         {
             GL = gl;
             Textures = textures;
             _attributes = attributes;
-            Vertices = vertices;
+            if (saveVerticesIndices)
+            {
+                Vertices = vertices.ToArray();
+                Indices = indices;
+            }
+            VerticesIndicesSaved = saveVerticesIndices;
             SetupMesh(indices, vertices);
         }
+        public bool VerticesIndicesSaved { get; private set; }
+        public Vertex[] Vertices { get; private set; }
+        public uint[] Indices { get; private set; }
 
-        public List<Vertex> Vertices;
         public Matrix4x4 Transform { get; internal set; }
 
         public IReadOnlyList<GLTexture> Textures { get; private set; }

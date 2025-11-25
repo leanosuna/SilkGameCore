@@ -183,15 +183,15 @@ namespace SilkGameCore
             InputManager.Update();
 
             //NetworkManager.Update();
-
+            if (Gizmos.Enabled)
+                Gizmos.Update();
             // User defined Update
             Update(deltaTime);
 
             if(CommonUboEnabled)
                 UpdateCommonUBO(deltaTime);
 
-            if(Gizmos.Enabled)
-                Gizmos.Update();
+            
 
         }
 

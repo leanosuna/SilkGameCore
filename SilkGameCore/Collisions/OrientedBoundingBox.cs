@@ -24,6 +24,7 @@ namespace SilkGameCore.Collisions
 
         internal Matrix4x4 _world;
 
+        public Matrix4x4 World { get => _world; }
 
         /// <summary>
         ///     Builds an empty Bounding Oriented Box.
@@ -40,6 +41,7 @@ namespace SilkGameCore.Collisions
             Position = position;
             Size = size * 0.5f;
             Orientation = Matrix4x4.Identity;
+            CalculateWorld();
         }
 
         /// <summary>
@@ -329,7 +331,7 @@ namespace SilkGameCore.Collisions
                 var side = Intersects(planes[faceIndex]);
                 if (side == PlaneIntersectionType.Back)
                     return false;
-            }
+        }
             return true;
         }
 
