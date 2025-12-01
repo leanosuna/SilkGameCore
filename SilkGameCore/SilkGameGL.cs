@@ -18,7 +18,10 @@ namespace SilkGameCore
     {
         public GL GL { get; private set; } = default!;
         public IWindow Window { get; private set; }
-        public Vector2D<int> WindowSize { get; private set; }
+        public Vector2 WindowSize { get; private set; }
+        public int WindowWidth => (int)WindowSize.X;
+        public int WindowHeight => (int)WindowSize.Y;
+
         public InputManager InputManager { get; private set; } = default!;
         public FullScreenQuad FullScreenQuad { get; private set; } = default!;
         public RTManager RTManager { get; private set; } = default!;
@@ -35,8 +38,6 @@ namespace SilkGameCore
         public double FPS { get; private set; } = 0;
         public double FPS_SAMPLE { get; private set; } = 0;
         public double FPS_SAMPLE_RATE { get; set; } = 0.3;
-
-        public bool CommonUboEnabled { get; set; } = false;
         public uint CommonUboHandle { get; private set; } = 0;
         private CommonUBO _commonUboData;
         private bool _delayedLoadDone = false;
@@ -51,7 +52,7 @@ namespace SilkGameCore
             options.API = new GraphicsAPI(ContextAPI.OpenGL, ContextProfile.Core, ContextFlags.Default, glApi);
 
             Window = Silk.NET.Windowing.Window.Create(options);
-            WindowSize = Window.Size;
+            WindowSize = Window.Size.ToNum();
 
             Window.Load += InternalLoad;
             Window.Update += InternalUpdate;
@@ -65,7 +66,7 @@ namespace SilkGameCore
         {
             Window = Silk.NET.Windowing.Window.Create(options);
 
-            WindowSize = Window.Size;
+            WindowSize = Window.Size.ToNum();
 
             Window.Load += InternalLoad;
             Window.Update += InternalUpdate;
@@ -188,8 +189,7 @@ namespace SilkGameCore
             // User defined Update
             Update(deltaTime);
 
-            if(CommonUboEnabled)
-                UpdateCommonUBO(deltaTime);
+            UpdateCommonUBO(deltaTime);
 
             
 
@@ -249,10 +249,30 @@ namespace SilkGameCore
                 Gizmos.Render();
             GUIManager.Render();
         }
+
+        public void SetResolution(Vector2 size, bool fullscreen)
+        {
+            if (fullscreen)
+            {
+                Window.WindowState = WindowState.Fullscreen;
+                
+            }
+            else
+            {
+                Window.WindowState = WindowState.Normal;
+                //Window.WindowBorder = 0;
+                
+            }
+            Window.Position = Vector2D<int>.Zero;
+            Window.Size = size.To2Di();
+        }
+
         private void InternalFramebufferResize(Vector2D<int> size)
         {
-            WindowSize = size;
+            Console.WriteLine($"resize detected {size}");
+            WindowSize = new Vector2(size.X, size.Y);
             GL.Viewport(size);
+            RTManager.HandleWindowResize();
             OnWindowResize(size);
         }
         private void InternalOnClose()

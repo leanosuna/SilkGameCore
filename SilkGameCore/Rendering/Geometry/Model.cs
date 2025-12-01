@@ -184,9 +184,9 @@ namespace SilkGameCore.Rendering.Geometry
                     var w = tex->MWidth;
                     var h = tex->MHeight;
 
-                    var t = new GLTexture(GL, tex->PcData, w, h);
+                    //var t = new GLTexture(GL, tex->PcData, w, h);
 
-                    _texturesLoaded.Add(t);
+                    //_texturesLoaded.Add(t);
 
                 }
 
