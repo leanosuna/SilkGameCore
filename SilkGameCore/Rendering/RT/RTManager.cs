@@ -1,6 +1,7 @@
 ﻿using Silk.NET.Assimp;
 using Silk.NET.OpenGL;
 using SilkGameCore.Rendering.Textures;
+using System.Globalization;
 using System.Linq;
 using System.Numerics;
 using static System.Net.Mime.MediaTypeNames;
@@ -93,8 +94,9 @@ namespace SilkGameCore.Rendering.RT
             GL.BindRenderbuffer(RenderbufferTarget.Renderbuffer, 0);
 
             var rt = new RenderTarget(GL, name, rtFrameBuffer, targetTextures.ToArray());
+            
             rt.DepthBuffer = depthBuffer;
-            _renderTargets.Add(name.ToLower(), rt);
+            _renderTargets.Add(name.ToLower(CultureInfo.InvariantCulture), rt);
 
             if (targetTextures.Any(t => t.FollowsWindowSize))
                 _dynamicTargets.Add(rt);
@@ -105,7 +107,7 @@ namespace SilkGameCore.Rendering.RT
 
         public RenderTarget FindByName(string name)
         {
-            if (!_renderTargets.TryGetValue(name.ToLower(), out var rt))
+            if (!_renderTargets.TryGetValue(name.ToLower(CultureInfo.InvariantCulture), out var rt))
                 throw new Exception($"RT {name} not found");    
             return rt;
         }
