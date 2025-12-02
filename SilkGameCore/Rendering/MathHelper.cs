@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Silk.NET.Maths;
+using System;
 using System.Numerics;
 
 namespace SilkGameCore.Rendering
@@ -104,5 +105,28 @@ namespace SilkGameCore.Rendering
 
             return fs;
         }
+
+        ///Silk Math easy converters
+        public static Vector2D<float> To2Df(this Vector2 v)
+        {
+            return new Vector2D<float>(v.X, v.Y);
+        }
+        public static Vector2D<int> To2Di(this Vector2 v)
+        {
+            return new Vector2D<int>((int)v.X, (int)v.Y);
+        }
+        public static Vector2 ToNum(this Vector2D<int> v)
+        {
+            return new Vector2(v.X, v.Y);
+        }
+        public static Vector2 ToNum(this Vector2D<float> v)
+        {
+            return new Vector2(v.X, v.Y);
+        }
+        public static Vector2 ToNum(this Vector2D<double> v)
+        {
+            return new Vector2((float)v.X, (float)v.Y);
+        }
+
     }
 }

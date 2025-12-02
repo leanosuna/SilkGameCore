@@ -1,6 +1,8 @@
 using Silk.NET.OpenGL;
 using SixLabors.ImageSharp;
 using SixLabors.ImageSharp.PixelFormats;
+using System.Numerics;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace SilkGameCore.Rendering.Textures
 {
@@ -11,9 +13,19 @@ namespace SilkGameCore.Rendering.Textures
 
         public string Path { get; set; } = default!;
 
-        public int Width, Height;
+        public Vector2 Size
+        {
+            get;
+            internal set;
+        }
 
-        public unsafe GLTexture(GL gl, string path)
+        public int Width => (int)Size.X;
+        public int Height => (int)Size.Y;
+
+        public unsafe GLTexture(GL gl, string path, 
+            InternalFormat format = InternalFormat.Rgba8, GLEnum wrapS = GLEnum.DecrWrap, 
+            GLEnum wrapT = GLEnum.DecrWrap, GLEnum minFilter = GLEnum.LinearMipmapLinear, 
+            GLEnum magFilter = GLEnum.Linear, bool genMipMap = true, int baseLevel = 0, int maxLevel = 8)
         {
             GL = gl;
             Path = path;
@@ -22,57 +34,92 @@ namespace SilkGameCore.Rendering.Textures
 
             using (var img = Image.Load<Rgba32>(path))
             {
-                gl.TexImage2D(TextureTarget.Texture2D, 0, InternalFormat.Rgba8, (uint)img.Width, (uint)img.Height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, null);
-                Width = img.Width;
-                Height = img.Height;
+                gl.TexImage2D(TextureTarget.Texture2D, 
+                    0, 
+                    format, 
+                    (uint)img.Width, 
+                    (uint)img.Height, 
+                    0, 
+                    PixelFormat.Rgba, 
+                    PixelType.UnsignedByte, 
+                    null);
+
+                Size = new Vector2(img.Width, img.Height);
                 img.ProcessPixelRows(accessor =>
                 {
                     for (int y = 0; y < accessor.Height; y++)
                     {
                         fixed (void* data = accessor.GetRowSpan(y))
                         {
-                            gl.TexSubImage2D(TextureTarget.Texture2D, 0, 0, y, (uint)accessor.Width, 1, PixelFormat.Rgba, PixelType.UnsignedByte, data);
+                            gl.TexSubImage2D(TextureTarget.Texture2D, 0, 0, y, 
+                                (uint)accessor.Width, 1, PixelFormat.Rgba, PixelType.UnsignedByte, data);
                         }
                     }
                 });
             }
 
-            SetParameters();
+            SetParameters(wrapS, wrapT, minFilter, magFilter, genMipMap, baseLevel, maxLevel);
         }
-        public unsafe GLTexture(GL gl, void* data, uint width, uint height)
+        public unsafe GLTexture(GL gl, void* data, uint width, uint height, InternalFormat format = InternalFormat.Rgba8,
+            GLEnum wrapS = GLEnum.DecrWrap, GLEnum wrapT = GLEnum.DecrWrap, GLEnum minFilter = GLEnum.LinearMipmapLinear,
+            GLEnum magFilter = GLEnum.Linear, bool genMipMap = true, int baseLevel = 0, int maxLevel = 8)
         {
             GL = gl;
 
             _handle = GL.GenTexture();
             Bind();
 
-            GL.TexImage2D(TextureTarget.Texture2D, 0, (int)InternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, data);
-            SetParameters();
-
+            GL.TexImage2D(TextureTarget.Texture2D, 
+                0, 
+                (int)InternalFormat.Rgba, 
+                width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, data);
+            SetParameters(wrapS, wrapT, minFilter, magFilter, genMipMap, baseLevel, maxLevel);
         }
-        public unsafe GLTexture(GL gl, Span<byte> data, uint width, uint height)
+
+        public unsafe GLTexture(GL gl, uint width, uint height, out uint handle, InternalFormat format = InternalFormat.Rgba8,
+            GLEnum wrapS = GLEnum.DecrWrap, GLEnum wrapT = GLEnum.DecrWrap, GLEnum minFilter = GLEnum.LinearMipmapLinear,
+            GLEnum magFilter = GLEnum.Linear, bool genMipMap = true, int baseLevel = 0, int maxLevel = 8)
         {
             GL = gl;
 
             _handle = GL.GenTexture();
             Bind();
 
-            fixed (void* d = &data[0])
+            GL.TexImage2D(TextureTarget.Texture2D,
+                0,
+                (int)InternalFormat.Rgba,
+                width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, null);
+            SetParameters(wrapS, wrapT, minFilter, magFilter, genMipMap, baseLevel, maxLevel);
+
+            handle = _handle;
+        }
+        
+        //public unsafe GLTexture(GL gl, Span<byte> data, uint width, uint height)
+        //{
+        //    GL = gl;
+
+        //    _handle = GL.GenTexture();
+        //    Bind();
+
+        //    fixed (void* d = &data[0])
+        //    {
+        //        GL.TexImage2D(TextureTarget.Texture2D, 0, (int)InternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, d);
+        //        SetParameters();
+        //    }
+        //}
+
+        private void SetParameters(GLEnum wrapS, GLEnum wrapT, GLEnum minFilter, GLEnum magFilter, bool genMipMap = true, int baseLevel = 0, int maxLevel = 8)
+        {
+            GL.TexParameter(TextureTarget.Texture2D, GLEnum.TextureWrapS, (int)wrapS);
+            GL.TexParameter(TextureTarget.Texture2D, GLEnum.TextureWrapT, (int)wrapT);
+            GL.TexParameter(TextureTarget.Texture2D, GLEnum.TextureMinFilter, (int)(genMipMap? GLEnum.LinearMipmapLinear : minFilter));
+            GL.TexParameter(TextureTarget.Texture2D, GLEnum.TextureMagFilter, (int)magFilter);
+            if(genMipMap)
             {
-                GL.TexImage2D(TextureTarget.Texture2D, 0, (int)InternalFormat.Rgba, width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, d);
-                SetParameters();
+                GL.TexParameter(TextureTarget.Texture2D, GLEnum.TextureBaseLevel, baseLevel);
+                GL.TexParameter(TextureTarget.Texture2D, GLEnum.TextureMaxLevel, maxLevel);
+                GL.GenerateMipmap(TextureTarget.Texture2D);
             }
-        }
-
-        private void SetParameters()
-        {
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapS, (int)GLEnum.DecrWrap);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureWrapT, (int)GLEnum.DecrWrap);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMinFilter, (int)GLEnum.LinearMipmapLinear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMagFilter, (int)GLEnum.Linear);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureBaseLevel, 0);
-            GL.TexParameter(TextureTarget.Texture2D, TextureParameterName.TextureMaxLevel, 8);
-            GL.GenerateMipmap(TextureTarget.Texture2D);
         }
 
 

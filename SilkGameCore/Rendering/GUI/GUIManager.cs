@@ -110,10 +110,26 @@ namespace SilkGameCore.Rendering.GUI
             var drawList = ImGui.GetForegroundDrawList();
             var textSize = ImGui.CalcTextSize(text);
 
-            drawList.AddText(position - textSize, ImGui.ColorConvertFloat4ToU32(color), text);
+            drawList.AddText(position - textSize /2, ImGui.ColorConvertFloat4ToU32(color), text);
         }
 
+        public void DrawHCenteredText(string text, Vector2 position, Vector4 color, int size)
+        {
+            SetFontSize(size);
+            var drawList = ImGui.GetForegroundDrawList();
+            var textSize = ImGui.CalcTextSize(text);
 
+            drawList.AddText(new Vector2(position.X - textSize.X / 2, position.Y), ImGui.ColorConvertFloat4ToU32(color), text);
+        }
+
+        public void DrawRAlignedText(string text, Vector2 position, Vector4 color, int size)
+        {
+            SetFontSize(size);
+            var drawList = ImGui.GetForegroundDrawList();
+            var textSize = ImGui.CalcTextSize(text);
+
+            drawList.AddText(new Vector2(position.X - textSize.X, position.Y), ImGui.ColorConvertFloat4ToU32(color), text);
+        }
         public void DrawImg(string name, string path, Vector2 position, Vector2 size)
         {
             DrawImg(name, path, position, size, Vector2.Zero, Vector2.One);

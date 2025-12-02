@@ -10,7 +10,8 @@ namespace SilkGameCore.Rendering.Geometry
     public class Model : IDisposable
     {
         private readonly GL GL;
-        private readonly bool _extractTextures;
+        private bool _extractTextures;
+        private bool _saveVerticesIndices;
         private Assimp _assimp;
         public List<GLTexture> _texturesLoaded = new List<GLTexture>();
         public string Directory { get; protected set; } = string.Empty;
@@ -35,7 +36,7 @@ namespace SilkGameCore.Rendering.Geometry
             MeshAttributes.TexCoord |
             MeshAttributes.Normals;
         public Model(GL gl, string path, AssimpPPS postProcessSteps = DefaultAssimpPost,
-            MeshAttributes meshAttributes = DefaultMeshAttributes, bool extractTextures = false)
+            MeshAttributes meshAttributes = DefaultMeshAttributes, bool extractTextures = false, bool saveVerticesIndices = false)
         {
             var assimp = Assimp.GetApi();
             _assimp = assimp;
@@ -44,6 +45,7 @@ namespace SilkGameCore.Rendering.Geometry
             _extractTextures = extractTextures;
             Log.Info($"loading model {path}");
 
+            _saveVerticesIndices = saveVerticesIndices;
             LoadModel(path, postProcessSteps);
         }
 
@@ -182,9 +184,9 @@ namespace SilkGameCore.Rendering.Geometry
                     var w = tex->MWidth;
                     var h = tex->MHeight;
 
-                    var t = new GLTexture(GL, tex->PcData, w, h);
+                    //var t = new GLTexture(GL, tex->PcData, w, h);
 
-                    _texturesLoaded.Add(t);
+                    //_texturesLoaded.Add(t);
 
                 }
 
@@ -212,7 +214,7 @@ namespace SilkGameCore.Rendering.Geometry
                 ExtractBoneWeights(vertices, mesh, scene);
             }
 
-            var result = new Mesh(GL, _meshAttributes, vertices, indices.ToArray(), textures);
+            var result = new Mesh(GL, _meshAttributes, vertices, indices.ToArray(), textures, _saveVerticesIndices);
             return result;
         }
 

@@ -20,7 +20,7 @@ namespace SilkGameCore.Cameras
             CalculateMouseAim();
         }
 
-        internal void CalculateMouseAim()
+        protected void CalculateMouseAim()
         {
             if (!MouseAim)
                 return;
