@@ -2,6 +2,7 @@
 using Phoenix.Collisions;
 using Phoenix.Rendering.Gizmos.Geometries;
 using System.Numerics;
+using Phoenix.Rendering.Shaders;
 
 namespace Phoenix.Rendering.Gizmos
 {

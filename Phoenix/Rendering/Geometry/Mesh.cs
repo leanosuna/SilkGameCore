@@ -1,6 +1,7 @@
 using Silk.NET.OpenGL;
 using Phoenix.Rendering.Textures;
 using System.Numerics;
+using Phoenix.Rendering.Shaders;
 
 namespace Phoenix.Rendering.Geometry
 {
@@ -30,6 +31,9 @@ namespace Phoenix.Rendering.Geometry
         private VertexArrayObject<float, uint> VAO { get; set; } = default!;
         private uint IndicesLength { get; set; } = default!;
         GL GL { get; }
+
+        GLShader _shader = default!;
+        bool _shouldThrowIfNotCurrent = false;
 
         BufferObject<uint> EBO = default!;
         uint _VAHandle;
@@ -179,8 +183,17 @@ namespace Phoenix.Rendering.Geometry
             byteOffset += byteCount;
         }
 
+        public void LinkToShader(GLShader shader, bool shouldThrowIfNotCurrent = true)
+        {
+            _shader = shader;
+            _shouldThrowIfNotCurrent = shouldThrowIfNotCurrent;
+        }
         public unsafe void Draw()
         {
+            if (_shader != default!)
+                if (!_shader.IsCurrent() && _shouldThrowIfNotCurrent)
+                    throw new Exception($"Linked shader for this mesh is not the current one.");
+            
             //bind VAO
             GL.BindVertexArray(_VAHandle);
 

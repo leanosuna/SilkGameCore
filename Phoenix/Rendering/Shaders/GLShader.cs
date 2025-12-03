@@ -2,15 +2,17 @@ using Silk.NET.OpenGL;
 using Phoenix.Rendering.Textures;
 using System.Numerics;
 
-namespace Phoenix.Rendering
+namespace Phoenix.Rendering.Shaders
 {
     public class GLShader : IDisposable
     {
+        static uint _currentShader = uint.MaxValue;
         private uint _handle;
         private GL GL;
         private bool ignoreUniformsNotFound;
 
         private Dictionary<string, int> uniformLocations = new Dictionary<string, int>();
+
 
         //public static APIVersion APIVersion { get; set; }
         public GLShader(GL glContext, string path, bool ignoreUniformsNotFound = false) :
@@ -54,11 +56,21 @@ namespace Phoenix.Rendering
         }
         public void SetAsCurrentGLProgram()
         {
-            GL.UseProgram(_handle);
+            if(!IsCurrent())
+            {
+                _currentShader = _handle;
+                GL.UseProgram(_handle);
+            }
         }
 
+        public bool IsCurrent()
+        {
+            return _currentShader == _handle;
+        }
 
-        int GetUniformLocation(string name)
+        
+
+        public int GetUniformLocation(string name)
         {
             if (uniformLocations.TryGetValue(name, out int location))
                 return location;
@@ -70,15 +82,9 @@ namespace Phoenix.Rendering
             return location;
 
         }
-        public unsafe void SetUniform<T>(string name, T value)
+
+        public unsafe void SetUniform<T>(int location, T value)
         {
-            int location = GetUniformLocation(name);
-            if (location == -1)
-            {
-                if (ignoreUniformsNotFound)
-                    return;
-                throw new Exception($"[{name}] not found on shader.");
-            }
             switch (value)
             {
                 case bool b: GL.ProgramUniform1(_handle, location, b ? 1 : 0); break;
@@ -124,7 +130,17 @@ namespace Phoenix.Rendering
                     break;
                 default: throw new Exception($"{typeof(T).Name} missing GL.UniformT entry");
             }
-
+        }
+        public unsafe void SetUniform<T>(string name, T value)
+        {
+            int location = GetUniformLocation(name);
+            if (location == -1)
+            {
+                if (ignoreUniformsNotFound)
+                    return;
+                throw new Exception($"[{name}] not found on shader.");
+            }
+            SetUniform(location, value);
         }
         public void SetTextureUniform(string name, uint tex, int slot)
         {
@@ -136,6 +152,18 @@ namespace Phoenix.Rendering
         {
             tex.Bind(TextureUnit.Texture0 + slot);
             SetUniform(name, slot);
+        }
+
+        public void SetTextureUniform(int location, uint tex, int slot)
+        {
+            GL.ActiveTexture(TextureUnit.Texture0 + slot);
+            GL.BindTexture(TextureTarget.Texture2D, tex);
+            SetUniform(location, slot);
+        }
+        public void SetTextureUniform(int location, GLTexture tex, int slot)
+        {
+            tex.Bind(TextureUnit.Texture0 + slot);
+            SetUniform(location, slot);
         }
 
         public void Dispose()

@@ -9,6 +9,7 @@ using Phoenix.Rendering.Gizmos;
 using Phoenix.Rendering.GUI;
 using Phoenix.Rendering.RT;
 using Phoenix.Rendering.Textures;
+using Phoenix.Rendering.Shaders;
 using Phoenix.Sound;
 using System.Numerics;
 
