@@ -6,11 +6,11 @@
     <Nullable>enable</Nullable>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <GeneratePackageOnBuild>False</GeneratePackageOnBuild>
-    <Title>Silk Game Core</Title>
+    <Title>Phoenix</Title>
     <Company></Company>
     <Product></Product>
     <Authors>leanosuna</Authors>
-    <Description>3D rendering and game framework using Silk.NET</Description>
+    <Description>3D rendering and game framework using Silk.NET and OpenGL</Description>
     <EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
     <AnalysisLevel>6.0</AnalysisLevel>
     <ProduceReferenceAssembly>True</ProduceReferenceAssembly>
