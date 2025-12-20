@@ -2,16 +2,19 @@ using Silk.NET.OpenGL;
 using Phoenix.Rendering.Textures;
 using System.Numerics;
 using Phoenix.Rendering.Shaders;
+using Silk.NET.Maths;
 
 namespace Phoenix.Rendering.Geometry
 {
     public class Mesh : IDisposable
     {
 
-        public Mesh(GL gl, MeshAttributes attributes, List<Vertex> vertices, uint[] indices, List<GLTexture> textures, bool saveVerticesIndices = false)
+        public Mesh(GL gl, MeshAttributes attributes, 
+            List<Vertex> vertices, uint[] indices, 
+            
+            bool saveVerticesIndices = false)
         {
             GL = gl;
-            Textures = textures;
             _attributes = attributes;
             if (saveVerticesIndices)
             {
@@ -26,10 +29,15 @@ namespace Phoenix.Rendering.Geometry
         public uint[] Indices { get; private set; }
 
         public Matrix4x4 Transform { get; internal set; }
-
-        public IReadOnlyList<GLTexture> Textures { get; private set; }
+        public string Name { get; internal set; } = string.Empty;
+        public Box3D<float> AABB { get; internal set; }
+        public uint NumFaces { get; internal set; }
+        public uint MaterialIndex { get; internal set; }
+        //public IReadOnlyList<GLTexture> Textures { get; private set; }
         private VertexArrayObject<float, uint> VAO { get; set; } = default!;
-        private uint IndicesLength { get; set; } = default!;
+        public uint IndicesLength { get; private set; } = default!;
+        public uint VerticesLength { get; private set; } = default!;
+
         GL GL { get; }
 
         GLShader _shader = default!;
@@ -45,7 +53,7 @@ namespace Phoenix.Rendering.Geometry
         private unsafe void SetupMesh(uint[] indices, List<Vertex> vertices)
         {
             IndicesLength = (uint)indices.Length;
-
+            VerticesLength = (uint)vertices.Count;
 
             _VAHandle = GL.GenVertexArray();
             GL.BindVertexArray(_VAHandle);

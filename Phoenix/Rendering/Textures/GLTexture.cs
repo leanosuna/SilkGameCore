@@ -12,7 +12,7 @@ namespace Phoenix.Rendering.Textures
         private GL GL;
 
         public string Path { get; set; } = default!;
-
+        public string Name { get; set; } = default!;
         public Vector2 Size
         {
             get;
@@ -29,6 +29,7 @@ namespace Phoenix.Rendering.Textures
         {
             GL = gl;
             Path = path;
+            Name = path.Split("\\").Last();
             _handle = GL.GenTexture();
             Bind();
 
@@ -60,15 +61,16 @@ namespace Phoenix.Rendering.Textures
 
             SetParameters(wrapS, wrapT, minFilter, magFilter, genMipMap, baseLevel, maxLevel);
         }
-        public unsafe GLTexture(GL gl, void* data, uint width, uint height, InternalFormat format = InternalFormat.Rgba8,
+        public unsafe GLTexture(GL gl, string name, void* data, uint width, uint height, InternalFormat format = InternalFormat.Rgba8,
             GLEnum wrapS = GLEnum.DecrWrap, GLEnum wrapT = GLEnum.DecrWrap, GLEnum minFilter = GLEnum.LinearMipmapLinear,
             GLEnum magFilter = GLEnum.Linear, bool genMipMap = true, int baseLevel = 0, int maxLevel = 8)
         {
             GL = gl;
-
+            Size = new Vector2((int)width, (int)height);
+            Path = ""; 
+            Name = name;
             _handle = GL.GenTexture();
             Bind();
-
             GL.TexImage2D(TextureTarget.Texture2D, 
                 0, 
                 (int)InternalFormat.Rgba, 
@@ -81,10 +83,11 @@ namespace Phoenix.Rendering.Textures
             GLEnum magFilter = GLEnum.Linear, bool genMipMap = true, int baseLevel = 0, int maxLevel = 8)
         {
             GL = gl;
-
+            Size = new Vector2((int)width, (int)height);
+            Path = "";
+            Name = "";
             _handle = GL.GenTexture();
             Bind();
-
             GL.TexImage2D(TextureTarget.Texture2D,
                 0,
                 (int)InternalFormat.Rgba,

@@ -1,10 +1,12 @@
-using Silk.NET.Assimp;
-using Silk.NET.OpenGL;
 using Phoenix.Rendering.Animation;
 using Phoenix.Rendering.Textures;
+using Silk.NET.Assimp;
+using Silk.NET.OpenGL;
 using System.Numerics;
+using System.Runtime.InteropServices;
 using AssimpMesh = Silk.NET.Assimp.Mesh;
 using AssimpPPS = Silk.NET.Assimp.PostProcessSteps;
+using Buffer = System.Buffer;
 namespace Phoenix.Rendering.Geometry
 {
     public class Model : IDisposable
@@ -13,7 +15,8 @@ namespace Phoenix.Rendering.Geometry
         private bool _extractTextures;
         private bool _saveVerticesIndices;
         private Assimp _assimp;
-        public List<GLTexture> _texturesLoaded = new List<GLTexture>();
+        public Dictionary<string, GLTexture> Textures = new Dictionary<string, GLTexture>();
+        
         public string Directory { get; protected set; } = string.Empty;
         private MeshAttributes _meshAttributes;
         public List<ModelPart> Parts { get; protected set; } = new List<ModelPart>();
@@ -58,6 +61,7 @@ namespace Phoenix.Rendering.Geometry
         }
         private unsafe void LoadModel(string path, AssimpPPS options)
         {
+            
             var scene = _assimp.ImportFile(path, (uint)options);
 
             if (scene == null || scene->MFlags == Assimp.SceneFlagsIncomplete || scene->MRootNode == null)
@@ -65,17 +69,11 @@ namespace Phoenix.Rendering.Geometry
                 var error = _assimp.GetErrorStringS();
                 throw new Exception(error);
             }
+            
+
             Directory = Path.GetDirectoryName(path) ?? string.Empty;
 
             ProcessNode(scene->MRootNode, scene, Matrix4x4.Identity);
-
-            //Bones = _boneDict.Select(b => b.Value).ToArray();
-
-            //for (var i = 0; i < Bones.Length; i++)
-            //{
-            //    Log.Debug($"b{i} {Bones[i].Name}");
-            //}
-
 
         }
 
@@ -96,7 +94,11 @@ namespace Phoenix.Rendering.Geometry
                 var assimpMesh = scene->MMeshes[node->MMeshes[i]];
 
                 var mesh = ProcessMesh(assimpMesh, scene);
+                mesh.Name = assimpMesh->MName;
+                mesh.NumFaces = assimpMesh->MNumFaces;
+                mesh.AABB = assimpMesh->MAABB;
                 mesh.Transform = relativeTransform;
+                
                 meshes.Add(mesh);
 
             }
@@ -119,7 +121,7 @@ namespace Phoenix.Rendering.Geometry
             // data to fill
             List<Vertex> vertices = new List<Vertex>();
             List<uint> indices = new List<uint>();
-            List<GLTexture> textures = new List<GLTexture>();
+            //List<GLTexture> textures = new List<GLTexture>();
 
             // walk through each of the mesh's vertices
             for (uint i = 0; i < mesh->MNumVertices; i++)
@@ -173,22 +175,7 @@ namespace Phoenix.Rendering.Geometry
             // where model loading fails if it can't find the textures for that model.
             if (_extractTextures)
             {
-                //_assimp.GetMaterialTexture()
-                //LoadMaterialTextures(scene->MMaterials);
-                var texCount = scene->MNumTextures;
-                ////gloss, difuse, normal, specular
-                for (var i = 0; i < texCount; i++)
-                {
-                    var tex = scene->MTextures[i];
-                    var name = tex->MFilename.AsString;
-                    var w = tex->MWidth;
-                    var h = tex->MHeight;
-
-                    //var t = new GLTexture(GL, tex->PcData, w, h);
-
-                    //_texturesLoaded.Add(t);
-
-                }
+                Textures = LoadEmbeddedTextures(GL, scene);
 
                 //var mc = scene->MNumMaterials;
                 //for (var i = 0; i < mc; i++)
@@ -214,11 +201,79 @@ namespace Phoenix.Rendering.Geometry
                 ExtractBoneWeights(vertices, mesh, scene);
             }
 
-            var result = new Mesh(GL, _meshAttributes, vertices, indices.ToArray(), textures, _saveVerticesIndices);
+            var result = new Mesh(GL, _meshAttributes, vertices, indices.ToArray(), _saveVerticesIndices);
             return result;
         }
 
+        public unsafe static Dictionary<string, GLTexture> LoadEmbeddedTextures(GL gl, Scene* scene)
+        {
+            var result = new Dictionary<string, GLTexture>();
 
+            if (scene == null || scene->MNumTextures == 0)
+                return result;
+
+            for (uint i = 0; i < scene->MNumTextures; i++)
+            {
+                var tex = scene->MTextures[i];
+
+                // Assimp name (usually "*0", "*1", etc.)
+
+
+                string name = Marshal.PtrToStringAnsi((nint)tex->MFilename.Data) ?? $"*{i}";
+                name = name.Split("\\").Last();
+                name = name.Split("/").Last();
+
+                GLTexture glTex;
+
+                if (tex->MHeight == 0)// COMPRESSED TEXTURE (PNG/JPG)
+                {
+                    int sizeInBytes = (int)tex->MWidth;
+                    byte[] compressed = new byte[sizeInBytes];
+
+                    fixed (byte* dst = compressed)
+                    {
+                        Buffer.MemoryCopy(tex->PcData, dst, sizeInBytes, sizeInBytes);
+                    }
+
+                    using var image = SixLabors.ImageSharp.Image
+                        .Load<SixLabors.ImageSharp.PixelFormats.Rgba32>(compressed);
+
+                    int w = image.Width, h = image.Height;
+                    int pixelCount = w * h;
+                    byte[] pixelData = new byte[pixelCount * 4];
+                    image.CopyPixelDataTo(pixelData); 
+
+                    fixed (void* pixelPtr = pixelData)
+                    {
+                        glTex = new GLTexture(
+                            gl,
+                            name,
+                            pixelPtr,
+                            (uint)image.Width,
+                            (uint)image.Height
+                        );
+                    }
+                }
+                else // RAW RGBA TEXTURE
+                {
+                    uint width = tex->MWidth;
+                    uint height = tex->MHeight;
+
+                    // aiTexel is already RGBA8
+                    glTex = new GLTexture(
+                        gl,
+                        name,
+                        tex->PcData,
+                        width,
+                        height
+                    );
+                }
+
+                result[name] = glTex;
+            }
+
+            return result;
+        }
         private unsafe void ExtractBoneWeights(List<Vertex> vertices, AssimpMesh* mesh, Scene* scene)
         {
             // Temporary dictionary to collect all influences per vertex
@@ -297,41 +352,7 @@ namespace Phoenix.Rendering.Geometry
                 vertices[vertexId] = vertex;
             }
         }
-
-        private unsafe List<GLTexture> LoadMaterialTextures(Material* mat, TextureType type)
-        {
-            var textureCount = _assimp.GetMaterialTextureCount(mat, type);
-            List<GLTexture> textures = new List<GLTexture>();
-            for (uint i = 0; i < textureCount; i++)
-            {
-                AssimpString path = "";
-                Return r = _assimp.GetMaterialTexture(mat, type, i, &path, null, null, null, null, null, null);
-                if (r == Return.Failure)
-                {
-                    return textures;
-                }
-                //This should use TextureManager calls.
-                bool skip = false;
-                for (int j = 0; j < _texturesLoaded.Count; j++)
-                {
-                    if (_texturesLoaded[j].Path == path)
-                    {
-                        textures.Add(_texturesLoaded[j]);
-                        skip = true;
-                        break;
-                    }
-                }
-                if (!skip)
-                {
-                    var texture = new GLTexture(GL, path);
-                    texture.Path = path;
-                    textures.Add(texture);
-                    _texturesLoaded.Add(texture);
-                }
-
-            }
-            return textures;
-        }
+              
 
         public void Dispose()
         {
@@ -340,7 +361,7 @@ namespace Phoenix.Rendering.Geometry
                 part.Dispose();
             }
 
-            _texturesLoaded.Clear();
+            Textures.Clear();
         }
     }
 }
