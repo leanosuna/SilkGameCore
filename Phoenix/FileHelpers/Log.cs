@@ -7,7 +7,7 @@ namespace Phoenix
     {
         private static readonly object _lock = new object();
         private static readonly string _logFile =
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "LOG.log");
+            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "LOG.txt");
         public static bool Verbose = false;
         public static bool ConsoleWrite = false;
         public static bool Date = false;

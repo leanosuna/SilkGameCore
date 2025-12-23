@@ -16,7 +16,7 @@ namespace Phoenix.Rendering.Geometry
         private bool _saveVerticesIndices;
         private Assimp _assimp;
         public Dictionary<string, GLTexture> Textures = new Dictionary<string, GLTexture>();
-        
+        private List<GLTexture>_texList;
         public string Directory { get; protected set; } = string.Empty;
         private MeshAttributes _meshAttributes;
         public List<ModelPart> Parts { get; protected set; } = new List<ModelPart>();
@@ -72,8 +72,29 @@ namespace Phoenix.Rendering.Geometry
             
 
             Directory = Path.GetDirectoryName(path) ?? string.Empty;
+            
+            if (_extractTextures)
+            {
+                Textures = LoadEmbeddedTextures(GL, scene);
+                _texList = [.. Textures.Values];
+                //var mc = scene->MNumMaterials;
+                //for (var i = 0; i < mc; i++)
+                //{
+                //    var mat = scene->MMaterials[i];
+                //    //var pc = mat->MNumProperties;
+                //    //for (var j = 0; j < pc; j++)
+                //    //{
+                //    //    var p = mat->MProperties[j];
+                //    //    var key = p->MKey.AsString;
+
+                //    //}
+                //    LoadMaterialTextures(mat, TextureType.Diffuse);
+
+                //}
+            }
 
             ProcessNode(scene->MRootNode, scene, Matrix4x4.Identity);
+            _texList.Clear();
 
         }
 
@@ -170,32 +191,7 @@ namespace Phoenix.Rendering.Geometry
                     indices.Add(face.MIndices[j]);
             }
 
-            // TODO: Process materials.
-            // Its optional to prevent having the same issues as monogame's fbx loader
-            // where model loading fails if it can't find the textures for that model.
-            if (_extractTextures)
-            {
-                Textures = LoadEmbeddedTextures(GL, scene);
-
-                //var mc = scene->MNumMaterials;
-                //for (var i = 0; i < mc; i++)
-                //{
-                //    var mat = scene->MMaterials[i];
-                //    //var pc = mat->MNumProperties;
-                //    //for (var j = 0; j < pc; j++)
-                //    //{
-                //    //    var p = mat->MProperties[j];
-                //    //    var key = p->MKey.AsString;
-
-                //    //}
-                //    LoadMaterialTextures(mat, TextureType.Diffuse);
-
-                //}
-
-
-            }
-
-
+            
             if (_meshAttributes.HasFlag(MeshAttributes.boneIds) && _meshAttributes.HasFlag(MeshAttributes.boneWeights))
             {
                 ExtractBoneWeights(vertices, mesh, scene);
@@ -212,7 +208,7 @@ namespace Phoenix.Rendering.Geometry
             if (scene == null || scene->MNumTextures == 0)
                 return result;
 
-            for (uint i = 0; i < scene->MNumTextures; i++)
+            for (int i = 0; i < (int)scene->MNumTextures; i++)
             {
                 var tex = scene->MTextures[i];
 
