@@ -17,7 +17,7 @@ namespace Phoenix.Rendering.Animation
 
 
         private int _boneCount;
-
+        public float _randomStartOffset;
         public unsafe Animation(string name, Scene* scene, Model model)
         {
             Name = name;
@@ -26,7 +26,7 @@ namespace Phoenix.Rendering.Animation
             TicksPerSecond = (float)assAnimation->MTicksPerSecond;
             if (TicksPerSecond <= 0)
                 TicksPerSecond = 25.0f;
-
+            _randomStartOffset = (float)new Random().NextDouble() * Duration;
             CurrentFrame = new Transform[model.BoneInfoMap.Count];
 
             for (int i = 0; i < CurrentFrame.Length; i++)
@@ -43,6 +43,7 @@ namespace Phoenix.Rendering.Animation
             {
                 Transforms[b] = Matrix4x4.Identity;
             }
+            Reset();
         }
 
         unsafe Keyframe[][] ReadKeyFrames(Silk.NET.Assimp.Animation* anim, Model model)
@@ -84,14 +85,14 @@ namespace Phoenix.Rendering.Animation
         }
         public void Reset()
         {
-            CurrentTime = 0.0f;
+            CurrentTime = _randomStartOffset;
         }
 
         public Transform[] UpdateFrameSRT(float deltaTime)
         {
             CurrentTime += TicksPerSecond * deltaTime;
             CurrentTime %= Duration;
-
+            
             for (int b = 0; b < _boneCount; b++)
             {
                 var keys = _keyframes[b];

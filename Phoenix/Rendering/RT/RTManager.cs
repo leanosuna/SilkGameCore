@@ -111,7 +111,11 @@ namespace Phoenix.Rendering.RT
                 throw new Exception($"RT {name} not found");    
             return rt;
         }
-        
+        public bool FindByName(string name, out RenderTarget target)
+        {
+            return _renderTargets.TryGetValue(name.ToLower(CultureInfo.InvariantCulture), out target);
+        }
+
         private unsafe void CreateRenderTextures(List<RenderTexture> targetTextures)
         {
             uint targetCount = (uint)targetTextures.Count();

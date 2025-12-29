@@ -16,7 +16,7 @@ namespace Phoenix.Rendering.Animation
         public Animator Animator { get; private set; }
         private bool _modelHierarchySet = false;
         private List<AnimatorNode> _animatorNodes = new List<AnimatorNode>();
-        public AnimatedModel(GL gl, string modelPath, string animationsPath, string[] animationNames)
+        public AnimatedModel(GL gl, string modelPath, string animationsPath, string[] animationNames, bool extractTextures = false)
         {
             if (animationNames.Count() == 0)
                 throw new Exception("At least one animation is required");
@@ -30,7 +30,7 @@ namespace Phoenix.Rendering.Animation
                     | MeshAttributes.Normals
                     | MeshAttributes.boneIds
                     | MeshAttributes.boneWeights,
-                extractTextures: true
+                extractTextures: extractTextures
             );
 
             Parts = _model.Parts;

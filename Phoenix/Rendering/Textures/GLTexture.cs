@@ -73,7 +73,7 @@ namespace Phoenix.Rendering.Textures
             Bind();
             GL.TexImage2D(TextureTarget.Texture2D, 
                 0, 
-                (int)InternalFormat.Rgba, 
+                (int)format, 
                 width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, data);
             SetParameters(wrapS, wrapT, minFilter, magFilter, genMipMap, baseLevel, maxLevel);
         }
@@ -90,7 +90,7 @@ namespace Phoenix.Rendering.Textures
             Bind();
             GL.TexImage2D(TextureTarget.Texture2D,
                 0,
-                (int)InternalFormat.Rgba,
+                (int)format,
                 width, height, 0, PixelFormat.Rgba, PixelType.UnsignedByte, null);
             SetParameters(wrapS, wrapT, minFilter, magFilter, genMipMap, baseLevel, maxLevel);
 

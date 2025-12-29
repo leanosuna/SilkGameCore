@@ -11,11 +11,13 @@ namespace Phoenix.Rendering.Shaders
         int _location;
         public GLShader _shader;
         int _slot;
-        public ShaderTextureUniform(GLShader shader, string name, int slot)
+        public ShaderTextureUniform(GLShader shader, string name, int slot, bool throwIfNotFound = true)
         {
             _shader = shader;
-            _location = shader.GetUniformLocation(name);
             _slot = slot;
+            _location = shader.GetUniformLocation(name);
+            if (_location == -1 && throwIfNotFound)
+                throw new Exception($"Uniform [{name}] not found");
         }
 
         public void Set(GLTexture tex)

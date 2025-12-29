@@ -16,14 +16,13 @@ namespace Phoenix.Rendering.Geometry
         private bool _saveVerticesIndices;
         private Assimp _assimp;
         public Dictionary<string, GLTexture> Textures = new Dictionary<string, GLTexture>();
-        private List<GLTexture>_texList;
+        private List<GLTexture>_texList = new List<GLTexture>();
         public string Directory { get; protected set; } = string.Empty;
         private MeshAttributes _meshAttributes;
         public List<ModelPart> Parts { get; protected set; } = new List<ModelPart>();
 
         public Dictionary<string, BoneInfo> BoneInfoMap { get; } = new Dictionary<string, BoneInfo>();
-
-
+        
         public const AssimpPPS DefaultAssimpPost =
                 AssimpPPS.FindDegenerates |
                 AssimpPPS.FindInvalidData |
@@ -280,32 +279,33 @@ namespace Phoenix.Rendering.Geometry
                 string boneName = mesh->MBones[boneID]->MName;
 
 
-                //if (!_boneDict.TryGetValue(boneName, out var boneInfo))
-                //{
-                //    _boneDict.Add(boneName, new Animation.Bone(boneName,
-                //        //Matrix4x4.Transpose
-                //        (mesh->MBones[boneID]->MOffsetMatrix)));
-
-                //}
                 var offset = mesh->MBones[boneID]->MOffsetMatrix;
-                //offset.Transpose();
-                BoneInfoMap.TryAdd(boneName, new BoneInfo(boneID, offset));
-
                 var weights = mesh->MBones[boneID]->MWeights;
                 var numWeights = mesh->MBones[boneID]->MNumWeights;
 
+                int trueBoneId; 
+                if(BoneInfoMap.TryGetValue(boneName, out var boneInfo))
+                {
+                    trueBoneId = boneInfo.ID;
+                }
+                else
+                {
+                    trueBoneId = BoneInfoMap.Count;
+                    BoneInfoMap.Add(boneName, new BoneInfo(trueBoneId, offset));
+
+                }
+               
                 for (int wi = 0; wi < numWeights; wi++)
                 {
                     int vertexId = (int)weights[wi].MVertexId;
                     float weight = weights[wi].MWeight;
-
                     if (!vertexInfluences.TryGetValue(vertexId, out var list))
                     {
                         list = new List<(int, float)>();
                         vertexInfluences[vertexId] = list;
                     }
 
-                    list.Add((boneID, weight));
+                    list.Add((trueBoneId, weight));
                 }
             }
 
@@ -314,12 +314,10 @@ namespace Phoenix.Rendering.Geometry
                 int vertexId = kvp.Key;
                 var influences = kvp.Value;
 
-
                 List<(int BoneId, float Weight)> topInfluences;
 
                 if (influences.Count > Vertex.MAX_BONE_INFLUENCE)
                 {
-                    //Log.Debug($"ami {vertexId}");
                     influences.Sort((a, b) => b.Weight.CompareTo(a.Weight));
                     topInfluences = influences.Take(Vertex.MAX_BONE_INFLUENCE).ToList();
 
