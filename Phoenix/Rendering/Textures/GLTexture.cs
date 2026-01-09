@@ -123,6 +123,8 @@ namespace Phoenix.Rendering.Textures
                 GL.TexParameter(TextureTarget.Texture2D, GLEnum.TextureMaxLevel, maxLevel);
                 GL.GenerateMipmap(TextureTarget.Texture2D);
             }
+
+            //GLEnum.DecrWrap
         }
 
 

@@ -24,13 +24,14 @@ namespace Phoenix.Rendering.Geometry
         public Dictionary<string, BoneInfo> BoneInfoMap { get; } = new Dictionary<string, BoneInfo>();
         
         public const AssimpPPS DefaultAssimpPost =
-                AssimpPPS.FindDegenerates |
+                AssimpPPS.Triangulate |
+                AssimpPPS.GenerateSmoothNormals |
+                AssimpPPS.GenerateUVCoords | 
                 AssimpPPS.FindInvalidData |
                 AssimpPPS.FlipUVs |
                 AssimpPPS.JoinIdenticalVertices |
                 AssimpPPS.ImproveCacheLocality |
-                AssimpPPS.OptimizeMeshes |
-                AssimpPPS.Triangulate |
+                AssimpPPS.SortByPrimitiveType |
                 AssimpPPS.LimitBoneWeights;
 
         public const MeshAttributes DefaultMeshAttributes =
