@@ -10,8 +10,6 @@ namespace Phoenix.AssetImport
         public string Path { get; set; } = "";
         public string RelativePath { get; set; } = "";
 
-        public string OutputFilePath { get; set; } = "";
-        
         public AssetType Type { get; set; }
     }
 }

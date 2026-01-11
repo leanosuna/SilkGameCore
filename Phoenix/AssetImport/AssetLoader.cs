@@ -1,4 +1,5 @@
 ﻿using Phoenix.AssetImport.Model;
+using Phoenix.AssetImport.Texture;
 using Silk.NET.OpenGL;
 using System;
 using System.Collections.Generic;
@@ -11,6 +12,9 @@ namespace Phoenix.AssetImport
         public const string ManifestDefaultPath = "Content/asset-manifest.json";
 
         private static readonly Dictionary<string, BinaryModel> _loadedModels = new();
+        private static readonly Dictionary<string, BinaryTexture> _loadedTextures = new();
+        //private static readonly Dictionary<string, BinaryShader> _loadedShaders = new();
+
         private static AssetManifest _assetManifest = default!;
         internal static GL GL;
         public static void Init(GL gl, string path = ManifestDefaultPath)
@@ -18,42 +22,56 @@ namespace Phoenix.AssetImport
             GL=gl;
             var manifestPath = Path.Combine(AppContext.BaseDirectory, path);
             _assetManifest = AssetManifestIO.Load(manifestPath);
+
         }
-
-        public static BinaryModel LoadModel(string name)
+        internal static string AssetAbsolutePath(string name)
         {
-            // Normalize input
-            var relativeBin = Path.HasExtension(name)
-                ? Path.ChangeExtension(name, ".bin")
-                : name + ".bin";
+            var noExt = Path.ChangeExtension(name, null).Replace('\\', '/');
 
-            // Normalize separators
-            relativeBin = relativeBin.Replace('\\', '/');
-            //relativeBin = relativeBin.Replace('/', '\\');
-
-            // Find asset by RELATIVE output path
+            var relativeBin = Path.ChangeExtension(name, ".bin");
+            
             var asset = _assetManifest.Assets
-                .Find(a => a.OutputFilePath
-                    .EndsWith(relativeBin, StringComparison.OrdinalIgnoreCase));
+                .Find(a => 
+                    Path.ChangeExtension(a.RelativePath, null)
+                    .Replace('\\', '/')
+                    .Equals(noExt, StringComparison.OrdinalIgnoreCase));
 
             if (asset == null)
                 throw new Exception($"Asset '{name}' not found in manifest");
 
-            // Resolve runtime path
-            var fullPath = Path.Combine(
+            var absolutePath = Path.Combine(
                 AppContext.BaseDirectory,
-                "Content",
-                asset.OutputFilePath
+                "Content/ContentBin",
+                relativeBin
             ).Replace('\\', '/');
 
-            if (!_loadedModels.TryGetValue(fullPath, out var model))
+            return absolutePath;
+        }
+
+        public static BinaryModel LoadModel(string name)
+        {
+            var absolutePath = AssetAbsolutePath(name);
+            if (!_loadedModels.TryGetValue(absolutePath, out var model))
             {
-                model = BinaryModelReader.Load(fullPath);
-                _loadedModels[fullPath] = model;
+                model = BinaryModelReader.Load(absolutePath);
+                _loadedModels[absolutePath] = model;
             }
 
             return model;
         }
+
+        public static BinaryTexture LoadTexture(string name)
+        {
+            var absolutePath = AssetAbsolutePath(name);
+            if (!_loadedTextures.TryGetValue(absolutePath, out var tex))
+            {
+                tex = BinaryTextureReader.Load(absolutePath);
+                _loadedTextures[absolutePath] = tex;
+            }
+
+            return tex;
+        }
+
     }
 
 }
